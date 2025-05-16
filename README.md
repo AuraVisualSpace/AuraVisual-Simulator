@@ -1,2 +1,2 @@
 # AuraVisual
-For the AuraVisual Website
+Web-based acoustic simulation tool for speaker layout design
