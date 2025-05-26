@@ -1,43 +1,556 @@
-css/* Basic reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
     font-family: Arial, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 40px;
+.container {
+    width: 1200px;
+    height: 800px;
+    margin: 20px auto;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
 }
 
-header h1 {
-    font-size: 2.5rem;
+/* Header */
+.header {
+    height: 60px;
+    background-color: #333;
+    color: white;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.header-button {
+    background-color: #4a6fba;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.header-button:hover {
+    background-color: #3a5ba0;
+}
+
+/* Main Container */
+.main {
+    display: flex;
+    flex: 1;
+}
+
+/* Left Panel - Speaker Selection */
+.left-panel {
+    width: 220px;
+    border-right: 1px solid #ddd;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    height: 40px;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.speaker-search {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-section {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.speaker-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.speaker-item {
     margin-bottom: 10px;
-}
-
-footer {
-    text-align: center;
-    margin-top: 50px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-}
-
-#app {
-    min-height: 400px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    padding: 20px;
     display: flex;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.speaker-item:hover {
+    background-color: #f0f8ff;
+    border-color: #4a6fba;
+}
+
+.speaker-item.selected {
+    background-color: #e6f0fa;
+    border-color: #4a6fba;
+}
+
+.speaker-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    text-align: center;
+    position: relative;
+}
+
+.speaker-icon img {
+    max-width: 40px;
+    max-height: 40px;
+}
+
+.mount-type-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4a6fba;
+}
+
+.speaker-details {
+    margin-left: 10px;
+    flex: 1;
+}
+
+.speaker-manufacturer {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 2px;
+}
+
+.speaker-model {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.speaker-specs {
+    font-size: 10px;
+    color: #666;
+    margin-bottom: 2px;
+}
+
+/* Center Area - Room Editor */
+.center-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.toolbar {
+    height: 40px;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #ddd;
+    gap: 10px;
+}
+
+.tool-button {
+    height: 28px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.tool-button:hover {
+    background-color: #f0f8ff;
+    border-color: #4a6fba;
+}
+
+.tool-button.active {
+    background-color: #4a6fba;
+    color: white;
+    border-color: #4a6fba;
+}
+
+.view-controls {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+}
+
+.toggle-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 15px;
+}
+
+.checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+}
+
+.checkbox.checked {
+    background-color: #4a6fba;
+    border-color: #4a6fba;
+}
+
+.checkbox.checked::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    left: 2px;
+    top: -2px;
+    font-size: 12px;
+}
+
+.room-editor {
+    flex: 1;
+    background-color: white;
+    background-image: 
+        linear-gradient(#e8e8e8 1px, transparent 1px),
+        linear-gradient(90deg, #e8e8e8 1px, transparent 1px),
+        linear-gradient(#f5f5f5 1px, transparent 1px),
+        linear-gradient(90deg, #f5f5f5 1px, transparent 1px);
+    background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    position: relative;
+    cursor: crosshair;
+}
+
+.room-view-label {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.room {
+    position: absolute;
+    left: 100px;
+    top: 80px;
+    width: 500px;
+    height: 350px;
+    border: 3px solid #333;
+    background-color: rgba(255,255,255,0.7);
+}
+
+.room-label {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+}
+
+.speaker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #4a6fba;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 20;
+}
+
+.speaker:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+}
+
+.speaker.selected {
+    background-color: #ff6b6b;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.3);
+}
+
+.speaker-coverage {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 30px solid transparent;
+    border-right: 30px solid transparent;
+    border-bottom: 60px solid rgba(74, 111, 186, 0.3);
+    transform: translate(-50%, -20px) rotate(180deg);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.coverage-overlay {
+    position: absolute;
+    left: 100px;
+    top: 80px;
+    width: 500px;
+    height: 350px;
+    background: radial-gradient(ellipse at center top, 
+        rgba(0,170,0,0.4) 0%, 
+        rgba(170,170,0,0.3) 50%, 
+        rgba(170,0,0,0.2) 80%, 
+        transparent 100%);
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Right Panel - Properties */
+.right-panel {
+    width: 220px;
+    border-left: 1px solid #ddd;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    margin: 10px;
+    padding: 8px;
+    background-color: #e6f0fa;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.property {
+    display: flex;
+    align-items: center;
+    margin: 8px 10px;
+    font-size: 12px;
+}
+
+.property-label {
+    width: 70px;
+    color: #666;
+    font-size: 11px;
+}
+
+.property-value {
+    flex: 1;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 11px;
+    background-color: white;
+}
+
+.property-value:focus {
+    outline: none;
+    border-color: #4a6fba;
+}
+
+.legend {
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.legend-header {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 11px;
+}
+
+.legend-color {
+    width: 15px;
+    height: 15px;
+    margin-right: 8px;
+    border: 1px solid #ccc;
+}
+
+.action-button {
+    margin: 8px 10px;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+    border: none;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.action-button.primary {
+    background-color: #4a6fba;
+}
+
+.action-button.primary:hover {
+    background-color: #3a5ba0;
+}
+
+.action-button.danger {
+    background-color: #dc3545;
+}
+
+.action-button.danger:hover {
+    background-color: #c82333;
+}
+
+/* Status Bar */
+.status-bar {
+    height: 30px;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ddd;
+}
+
+.status-item {
+    margin-right: 30px;
+}
+
+.status-item:last-child {
+    margin-left: auto;
+}
+
+.status-item#average-spl {
+    font-weight: bold;
+}
+
+/* Premium Overlay */
+.premium-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
     justify-content: center;
     align-items: center;
-    background-color: #f9f9f9;
+    z-index: 1000;
+}
+
+.premium-dialog {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.premium-dialog h2 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.premium-dialog p {
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.premium-dialog button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.premium-dialog .upgrade {
+    background-color: #4a6fba;
+    color: white;
+}
+
+.premium-dialog .cancel {
+    background-color: #ccc;
+    color: #666;
+}
+
+.no-results {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .container {
+        width: 95%;
+        height: 90vh;
+    }
 }
