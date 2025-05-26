@@ -3,7 +3,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
-}
+     }
 
 .container {
     width: 1200px;
@@ -553,4 +553,92 @@ body {
         width: 95%;
         height: 90vh;
     }
+}
+
+
+/* Enhanced Speaker Icon Styles */
+.speaker-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.speaker-icon:hover {
+    background-color: #e9ecef;
+    transform: scale(1.05);
+}
+
+.speaker-emoji {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mount type indicators */
+.mount-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+.mount-indicator.ceiling {
+    background-color: #17a2b8;
+}
+
+.mount-indicator.wall {
+    background-color: #28a745;
+}
+
+.mount-indicator.stand {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.mount-indicator.flying {
+    background-color: #6f42c1;
+}
+
+/* Manufacturer-specific styling */
+.speaker-icon.jbl {
+    border-left: 3px solid #ff6600;
+}
+
+.speaker-icon.qsc {
+    border-left: 3px solid #0066cc;
+}
+
+.speaker-icon.ev {
+    border-left: 3px solid #cc0000;
+}
+
+.speaker-icon.yamaha {
+    border-left: 3px solid #7b1fa2;
+}
+
+.speaker-icon.bose {
+    border-left: 3px solid #000000;
+}
+
+/* Remove old mount-type-indicator styles that aren't working */
+.mount-type-indicator {
+    display: none;
 }
