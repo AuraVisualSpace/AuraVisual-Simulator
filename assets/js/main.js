@@ -396,24 +396,19 @@ function switchView(viewType) {
     document.getElementById('room-view-label').textContent = viewType === 'top' ? 'Top View' : 'Side View';
 }
 
-// ROOM SIZING FUNCTIONS
-
-// Initialize room size when page loads
-function initializeRoomSize() {
-    // Set default room size
-    document.getElementById('room-width').value = 5.0;
-    document.getElementById('room-height').value = 3.5;
-    
-    // Apply the room size
-    updateRoomSize();
-}
-
-// Update room size based on user input (width up to 30m, height up to 12m)
+// Enhanced room sizing with 3D dimensions (Length × Width × Height)
 function updateRoomSize() {
+    const length = parseFloat(document.getElementById('room-length').value);
     const width = parseFloat(document.getElementById('room-width').value);
     const height = parseFloat(document.getElementById('room-height').value);
     
     // Validate input
+    if (isNaN(length) || length < 2 || length > 30) {
+        alert('Room length must be between 2m and 30m');
+        document.getElementById('room-length').value = 8.0;
+        return;
+    }
+    
     if (isNaN(width) || width < 2 || width > 30) {
         alert('Room width must be between 2m and 30m');
         document.getElementById('room-width').value = 5.0;
@@ -425,6 +420,357 @@ function updateRoomSize() {
         document.getElementById('room-height').value = 3.5;
         return;
     }
+    
+    // Calculate display dimensions based on current view
+    let displayWidth, displayHeight;
+    let dimensionLabel;
+    
+    const baseScale = 50; // 1 meter = 50 pixels (base scale)
+    const maxDisplayWidth = 600;
+    const maxDisplayHeight = 400;
+    
+    if (currentView === 'top') {
+        // Top view shows Length × Width
+        displayWidth = length * baseScale;
+        displayHeight = width * baseScale;
+        dimensionLabel = `${length}m × ${width}m (H: ${height}m)`;
+    } else {
+        // Side view shows Length × Height
+        displayWidth = length * baseScale;
+        displayHeight = height * baseScale;
+        dimensionLabel = `${length}m × ${height}m (W: ${width}m)`;
+    }
+    
+    // Apply scaling if room is too large for display area
+    let scaleFactor = 1;
+    if (displayWidth > maxDisplayWidth || displayHeight > maxDisplayHeight) {
+        const scaleX = maxDisplayWidth / displayWidth;
+        const scaleY = maxDisplayHeight / displayHeight;
+        scaleFactor = Math.min(scaleX, scaleY);
+        
+        displayWidth *= scaleFactor;
+        displayHeight *= scaleFactor;
+    }
+    
+    // Update room visual elements
+    const room = document.querySelector('.room');
+    const overlay = document.querySelector('.coverage-overlay');
+    const roomEditor = document.getElementById('room-editor');
+    
+    if (room) {
+        // Update room dimensions
+        room.style.width = displayWidth + 'px';
+        room.style.height = displayHeight + 'px';
+        
+        // Store all 3D dimensions for calculations
+        room.setAttribute('data-actual-length', length);
+        room.setAttribute('data-actual-width', width);
+        room.setAttribute('data-actual-height', height);
+        room.setAttribute('data-scale-factor', scaleFactor);
+        room.setAttribute('data-display-width', displayWidth);
+        room.setAttribute('data-display-height', displayHeight);
+        
+        // Center the room in the editor
+        const centerX = Math.max(100, (800 - displayWidth) / 2);
+        const centerY = Math.max(80, (500 - displayHeight) / 2);
+        
+        room.style.left = centerX + 'px';
+        room.style.top = centerY + 'px';
+        
+        // Update overlay to match room position and size
+        if (overlay) {
+            overlay.style.width = displayWidth + 'px';
+            overlay.style.height = displayHeight + 'px';
+            overlay.style.left = centerX + 'px';
+            overlay.style.top = centerY + 'px';
+        }
+        
+        // Add dimension labels
+        updateRoomDimensionLabels(room, length, width, height);
+    }
+    
+    // Update room label
+    const roomLabel = document.querySelector('.room-label');
+    if (roomLabel) {
+        let labelText = `Room: ${dimensionLabel}`;
+        if (scaleFactor < 1) {
+            labelText += ` (${Math.round(scaleFactor * 100)}% scale)`;
+        }
+        roomLabel.textContent = labelText;
+    }
+    
+    // Update status bar
+    const statusItems = document.querySelectorAll('.status-item');
+    if (statusItems.length > 0) {
+        statusItems[0].textContent = `Room: ${length}m × ${width}m × ${height}m`;
+    }
+    
+    // Apply view-specific styling
+    applyViewStyling();
+    
+    // Reposition existing speakers based on current view
+    repositionSpeakersForView();
+    
+    console.log(`Room updated: ${length}m × ${width}m × ${height}m | View: ${currentView} | Display: ${Math.round(displayWidth)}×${Math.round(displayHeight)}px`);
+}
+
+// Add dimension labels to room
+function updateRoomDimensionLabels(room, length, width, height) {
+    // Remove existing dimension labels
+    const existingLabels = room.querySelectorAll('.room-dimensions');
+    existingLabels.forEach(label => label.remove());
+    
+    if (currentView === 'top') {
+        // Length label (bottom)
+        const lengthLabel = document.createElement('div');
+        lengthLabel.className = 'room-dimensions length';
+        lengthLabel.textContent = `${length}m`;
+        room.appendChild(lengthLabel);
+        
+        // Width label (right side)
+        const widthLabel = document.createElement('div');
+        widthLabel.className = 'room-dimensions width';
+        widthLabel.textContent = `${width}m`;
+        room.appendChild(widthLabel);
+    } else {
+        // Length label (bottom)
+        const lengthLabel = document.createElement('div');
+        lengthLabel.className = 'room-dimensions length';
+        lengthLabel.textContent = `${length}m`;
+        room.appendChild(lengthLabel);
+        
+        // Height label (right side)
+        const heightLabel = document.createElement('div');
+        heightLabel.className = 'room-dimensions height';
+        heightLabel.textContent = `${height}m`;
+        room.appendChild(heightLabel);
+    }
+}
+
+// Enhanced switch view function with actual 3D view changes
+function switchView(viewType) {
+    const previousView = currentView;
+    currentView = viewType;
+    
+    // Update button states
+    document.getElementById('top-view-btn').classList.toggle('active', viewType === 'top');
+    document.getElementById('side-view-btn').classList.toggle('active', viewType === 'side');
+    
+    // Update view label
+    document.getElementById('room-view-label').textContent = viewType === 'top' ? 'Top View' : 'Side View';
+    
+    // Update room dimensions and view
+    updateRoomSize();
+    
+    console.log(`View switched from ${previousView} to ${viewType}`);
+}
+
+// Apply view-specific styling
+function applyViewStyling() {
+    const roomEditor = document.getElementById('room-editor');
+    
+    // Remove existing view classes
+    roomEditor.classList.remove('top-view', 'side-view');
+    
+    // Add current view class
+    roomEditor.classList.add(currentView + '-view');
+    
+    // Update all speakers with height data for side view
+    if (currentView === 'side') {
+        updateSpeakersForSideView();
+    } else {
+        updateSpeakersForTopView();
+    }
+}
+
+// Update speakers for side view (show elevation)
+function updateSpeakersForSideView() {
+    // Update placed speakers
+    placedSpeakers.forEach(speaker => {
+        const speakerEl = document.getElementById('speaker' + speaker.id);
+        if (speakerEl) {
+            speakerEl.setAttribute('data-height', speaker.mountHeight?.toFixed(1) + 'm');
+            
+            // Position speaker vertically based on mount height
+            const room = document.querySelector('.room');
+            if (room) {
+                const roomHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
+                const displayHeight = parseFloat(room.style.height);
+                const roomTop = parseFloat(room.style.top);
+                
+                // Calculate Y position based on mount height (inverted because top of room is ceiling)
+                const heightRatio = 1 - (speaker.mountHeight || 1.2) / roomHeight;
+                const newY = roomTop + (heightRatio * displayHeight);
+                
+                speakerEl.style.top = newY + 'px';
+                
+                const coverageEl = document.getElementById('coverage' + speaker.id);
+                if (coverageEl) {
+                    coverageEl.style.top = newY + 'px';
+                }
+            }
+        }
+    });
+    
+    // Update demo speakers
+    const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
+    demoSpeakers.forEach((speakerId, index) => {
+        const speakerEl = document.getElementById(speakerId);
+        if (speakerEl) {
+            speakerEl.setAttribute('data-height', '1.2m'); // Default height for demo speakers
+        }
+    });
+}
+
+// Update speakers for top view (show floor plan)
+function updateSpeakersForTopView() {
+    // Remove height attributes and reset positions
+    const allSpeakers = document.querySelectorAll('.speaker');
+    allSpeakers.forEach(speaker => {
+        speaker.removeAttribute('data-height');
+    });
+    
+    // Reposition speakers back to their original X,Y positions
+    repositionSpeakersForView();
+}
+
+// Reposition speakers when view changes
+function repositionSpeakersForView() {
+    const room = document.querySelector('.room');
+    if (!room) return;
+    
+    const roomLeft = parseFloat(room.style.left) || 100;
+    const roomTop = parseFloat(room.style.top) || 80;
+    const roomWidth = parseFloat(room.style.width) || 400;
+    const roomHeight = parseFloat(room.style.height) || 280;
+    
+    // Update positioned speakers from placedSpeakers array
+    placedSpeakers.forEach(speaker => {
+        const speakerEl = document.getElementById('speaker' + speaker.id);
+        const coverageEl = document.getElementById('coverage' + speaker.id);
+        
+        if (speakerEl && coverageEl) {
+            let newX, newY;
+            
+            if (currentView === 'top') {
+                // Top view: use actualX (length) and actualY (width) positions
+                const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+                const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
+                
+                const xPercent = (speaker.actualX || actualLength/2) / actualLength;
+                const yPercent = (speaker.actualY || actualWidth/2) / actualWidth;
+                
+                newX = roomLeft + (xPercent * roomWidth);
+                newY = roomTop + (yPercent * roomHeight);
+                
+            } else {
+                // Side view: use actualX (length) and mount height for positioning
+                const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+                const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
+                
+                const xPercent = (speaker.actualX || actualLength/2) / actualLength;
+                const heightRatio = 1 - (speaker.mountHeight || 1.2) / actualHeight; // Inverted for display
+                
+                newX = roomLeft + (xPercent * roomWidth);
+                newY = roomTop + (heightRatio * roomHeight);
+            }
+            
+            // Update speaker position
+            speakerEl.style.left = newX + 'px';
+            speakerEl.style.top = newY + 'px';
+            coverageEl.style.left = newX + 'px';
+            coverageEl.style.top = newY + 'px';
+            
+            // Update speaker's stored pixel position
+            speaker.x = newX;
+            speaker.y = newY;
+        }
+    });
+    
+    // Update demo speakers for the current view
+    const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
+    demoSpeakers.forEach((speakerId, index) => {
+        const speakerEl = document.getElementById(speakerId);
+        const coverageEl = document.getElementById('coverage' + (index + 1));
+        
+        if (speakerEl && coverageEl) {
+            let newX, newY;
+            
+            if (currentView === 'top') {
+                // Distribute evenly across width
+                const spacing = roomWidth / (demoSpeakers.length + 1);
+                newX = roomLeft + spacing * (index + 1);
+                newY = roomTop + (roomHeight * 0.3);
+            } else {
+                // Side view: distribute across length, position at typical height
+                const spacing = roomWidth / (demoSpeakers.length + 1);
+                newX = roomLeft + spacing * (index + 1);
+                newY = roomTop + (roomHeight * 0.7); // 70% down from ceiling (1.2m height in 3.5m room)
+            }
+            
+            speakerEl.style.left = newX + 'px';
+            speakerEl.style.top = newY + 'px';
+            coverageEl.style.left = newX + 'px';
+            coverageEl.style.top = newY + 'px';
+        }
+    });
+}
+
+// Initialize 3D room size when page loads
+function initializeRoomSize() {
+    // Set default 3D room dimensions
+    document.getElementById('room-length').value = 8.0;
+    document.getElementById('room-width').value = 5.0;
+    document.getElementById('room-height').value = 3.5;
+    
+    // Apply the room size
+    updateRoomSize();
+}
+
+// Enhanced properties panel update for 3D coordinates
+function updatePropertiesPanel(speakerId) {
+    const speaker = placedSpeakers.find(s => s.id === speakerId);
+    if (!speaker) {
+        // Handle static speakers for demo
+        const speakerData = getSpeakerById(selectedDatabaseSpeakerId || 'jbl-srx835p');
+        document.getElementById('model-value').textContent = speakerData ? `${speakerData.manufacturer} ${speakerData.model}` : 'Demo Speaker';
+        
+        // For demo speakers, show approximate 3D positions
+        document.getElementById('x-position').value = '4.0 m'; // Length position
+        document.getElementById('y-position').value = '1.5 m'; // Width position  
+        document.getElementById('mount-height').value = '1.2 m'; // Height
+        document.getElementById('rotation').value = '0°';
+        document.getElementById('tilt').value = '0°';
+        document.getElementById('power').value = '100W';
+        return;
+    }
+    
+    const speakerData = getSpeakerById(speaker.databaseId);
+    
+    // Update values in the properties panel with 3D coordinates
+    document.getElementById('model-value').textContent = `${speakerData.manufacturer} ${speakerData.model}`;
+    document.getElementById('x-position').value = (speaker.actualX || 4.0).toFixed(1) + ' m'; // Length
+    document.getElementById('y-position').value = (speaker.actualY || 2.5).toFixed(1) + ' m'; // Width
+    document.getElementById('mount-height').value = (speaker.mountHeight || 1.2).toFixed(1) + ' m'; // Height
+    document.getElementById('rotation').value = speaker.rotation + '°';
+    document.getElementById('tilt').value = speaker.tilt + '°';
+    document.getElementById('power').value = speaker.power + 'W';
+    
+    // Update mount type dropdown
+    const mountTypeSelect = document.getElementById('mount-type');
+    mountTypeSelect.innerHTML = '';
+    
+    speakerData.mountTypes.forEach(mountType => {
+        const mountTypeInfo = speakerDatabase.mountTypes.find(mt => mt.id === mountType);
+        if (mountTypeInfo) {
+            const option = document.createElement('option');
+            option.value = mountType;
+            option.textContent = mountTypeInfo.name;
+            option.selected = (speaker.mountType === mountType);
+            mountTypeSelect.appendChild(option);
+        }
+    });
+}
     
     // Convert meters to pixels for display
     const baseScale = 60; // 1 meter = 60 pixels (base scale)
