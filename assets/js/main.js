@@ -381,15 +381,7 @@ function selectSpeakerModel(speakerId) {
 
 // Select a tool
 function selectTool(tool) {
-    currentTool = tool;
-    
-    // Update tool button styling
-    document.getElementById('speaker-tool').classList.toggle('active', tool === 'speaker');
-    document.getElementById('move-tool').classList.toggle('active', tool === 'move');
-    
-    // Update cursor on room editor
-    const roomEditor = document.getElementById('room-editor');
-    roomEditor.style.cursor = tool === 'speaker' ? 'crosshair' : 'move';
+    selectToolEnhanced(tool);
 }
 
 // Switch between top and side views
