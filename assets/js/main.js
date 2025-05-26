@@ -83,7 +83,10 @@ let currentTool = 'speaker';
 // Drag functionality
 let isDragging = false;
 let dragSpeakerId = null;
-let dragOffset = { x: 0, y: 0 };
+let startMouseX = 0;
+let startMouseY = 0;
+let startSpeakerX = 0;
+let startSpeakerY = 0;
 
 // Initialize application
 window.onload = function() {
@@ -466,13 +469,18 @@ function selectTool(tool) {
     document.getElementById('move-tool').classList.toggle('active', tool === 'move');
     
     const roomEditor = document.getElementById('room-editor');
+    
     if (tool === 'speaker') {
         roomEditor.style.cursor = 'crosshair';
+        roomEditor.title = 'Click to place speakers';
         disableSpeakerDragging();
     } else if (tool === 'move') {
         roomEditor.style.cursor = 'default';
+        roomEditor.title = 'Drag speakers to move them';
         enableSpeakerDragging();
     }
+    
+    console.log(`Tool switched to: ${tool}`);
 }
 
 // Enable speaker dragging
@@ -480,8 +488,12 @@ function enableSpeakerDragging() {
     const allSpeakers = document.querySelectorAll('.speaker');
     allSpeakers.forEach(speaker => {
         speaker.style.cursor = 'grab';
+        // Remove any existing listeners first
+        speaker.removeEventListener('mousedown', handleSpeakerMouseDown);
+        // Add new listener
         speaker.addEventListener('mousedown', handleSpeakerMouseDown);
     });
+    console.log('Drag enabled for', allSpeakers.length, 'speakers');
 }
 
 // Disable speaker dragging  
@@ -491,10 +503,13 @@ function disableSpeakerDragging() {
         speaker.style.cursor = 'pointer';
         speaker.removeEventListener('mousedown', handleSpeakerMouseDown);
     });
-    
+        
+    // Clean up any ongoing drag
     isDragging = false;
     dragSpeakerId = null;
+    console.log('Drag disabled');
 }
+
 
 // Handle speaker mouse down
 function handleSpeakerMouseDown(event) {
@@ -503,43 +518,58 @@ function handleSpeakerMouseDown(event) {
     event.preventDefault();
     event.stopPropagation();
     
+    // Get speaker info
     const speakerId = event.target.id.replace('speaker', '');
     dragSpeakerId = parseInt(speakerId);
     
+    // Select the speaker
     selectSpeaker(dragSpeakerId);
     
-    const speakerRect = event.target.getBoundingClientRect();
-    dragOffset.x = event.clientX - speakerRect.left - speakerRect.width / 2;
-    dragOffset.y = event.clientY - speakerRect.top - speakerRect.height / 2;
+    // Record starting positions
+    startMouseX = event.clientX;
+    startMouseY = event.clientY;
+    startSpeakerX = parseFloat(event.target.style.left) || 0;
+    startSpeakerY = parseFloat(event.target.style.top) || 0;
     
+    // Start dragging
     isDragging = true;
     event.target.style.cursor = 'grabbing';
     event.target.style.zIndex = '1000';
+    
+    console.log(`Drag start: Speaker ${dragSpeakerId} at ${startSpeakerX}, ${startSpeakerY}`);
 }
 
 // Handle mouse move (FIXED VERSION)
 function handleMouseMove(event) {
-    if (!isDragging || !dragSpeakerId || currentTool !== 'move') return;
+    if (!isDragging || !dragSpeakerId) return;
     
     event.preventDefault();
     
-    // Calculate new position using the corrected offset
-    const newX = event.clientX - dragOffset.x;
-    const newY = event.clientY - dragOffset.y;
+    // Calculate how far the mouse has moved
+    const deltaX = event.clientX - startMouseX;
+    const deltaY = event.clientY - startMouseY;
     
-    // Get room boundaries for constraint
+    // Calculate new speaker position
+    const newX = startSpeakerX + deltaX;
+    const newY = startSpeakerY + deltaY;
+    
+    // Get room boundaries
     const room = document.querySelector('.room');
     if (!room) return;
     
-    const roomRect = room.getBoundingClientRect();
     const roomLeft = parseFloat(room.style.left) || 100;
     const roomTop = parseFloat(room.style.top) || 80;
     const roomWidth = parseFloat(room.style.width) || 400;
     const roomHeight = parseFloat(room.style.height) || 280;
     
-    // Constrain to room boundaries (with speaker size padding)
-    const constrainedX = Math.max(roomLeft + 10, Math.min(roomLeft + roomWidth - 30, newX));
-    const constrainedY = Math.max(roomTop + 10, Math.min(roomTop + roomHeight - 30, newY));
+    // Constrain to room (with 15px padding for speaker size)
+    const minX = roomLeft + 15;
+    const maxX = roomLeft + roomWidth - 15;
+    const minY = roomTop + 15;
+    const maxY = roomTop + roomHeight - 15;
+    
+    const constrainedX = Math.max(minX, Math.min(maxX, newX));
+    const constrainedY = Math.max(minY, Math.min(maxY, newY));
     
     // Update speaker position
     const speakerEl = document.getElementById('speaker' + dragSpeakerId);
@@ -555,14 +585,16 @@ function handleMouseMove(event) {
         coverageEl.style.top = constrainedY + 'px';
     }
     
-    // Update speaker data
+    // Update speaker data in memory
     const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
     if (speakerIndex !== -1) {
         placedSpeakers[speakerIndex].x = constrainedX;
         placedSpeakers[speakerIndex].y = constrainedY;
         
+        // Update actual position in meters
         updateSpeakerActualPosition(speakerIndex, constrainedX, constrainedY);
         
+        // Update properties panel if this speaker is selected
         if (selectedSpeakerId === dragSpeakerId) {
             updatePropertiesPanel(dragSpeakerId);
         }
@@ -572,6 +604,7 @@ function handleMouseMove(event) {
 function handleMouseUp(event) {
     if (!isDragging || !dragSpeakerId) return;
     
+    // End dragging
     isDragging = false;
     
     const speakerEl = document.getElementById('speaker' + dragSpeakerId);
@@ -580,8 +613,16 @@ function handleMouseUp(event) {
         speakerEl.style.zIndex = '';
     }
     
+    console.log(`Drag end: Speaker ${dragSpeakerId}`);
+    
+    // Clear drag state
     dragSpeakerId = null;
+    startMouseX = 0;
+    startMouseY = 0;
+    startSpeakerX = 0;
+    startSpeakerY = 0;
 }
+
 
 // Update speaker actual position
 function updateSpeakerActualPosition(speakerIndex, pixelX, pixelY) {
