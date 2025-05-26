@@ -66,25 +66,25 @@
                     </div>
                 </div>
                 
-                
-<div class="section-header">Room Settings</div>
-                
-                <div class="property">
-                    <div class="property-label">Length:</div>
-                    <input type="number" class="property-value" id="room-length" value="8.0" min="2" max="30" step="0.1" onchange="updateRoomSize()"> m
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Width:</div>
-                    <input type="number" class="property-value" id="room-width" value="5.0" min="2" max="30" step="0.1" onchange="updateRoomSize()"> m
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Height:</div>
-                    <input type="number" class="property-value" id="room-height" value="3.5" min="2" max="12" step="0.1" onchange="updateRoomSize()"> m
-                </div>
+                <div class="room-editor" id="room-editor">
+                    <div class="room-view-label" id="room-view-label">Top View</div>
+                    <div class="room">
+                        <div class="room-label">Room: 5.0m × 3.5m</div>
+                    </div>
                     
-                  
+                    <!-- Example placed speakers -->
+                    <div class="speaker selected" id="speaker1" style="left: 300px; top: 120px;" onclick="selectSpeaker(1)"></div>
+                    <div class="speaker-coverage" id="coverage1" style="left: 300px; top: 120px;"></div>
+                    
+                    <div class="speaker" id="speaker2" style="left: 400px; top: 120px;" onclick="selectSpeaker(2)"></div>
+                    <div class="speaker-coverage" id="coverage2" style="left: 400px; top: 120px;"></div>
+                    
+                    <div class="speaker" id="speaker3" style="left: 500px; top: 120px;" onclick="selectSpeaker(3)"></div>
+                    <div class="speaker-coverage" id="coverage3" style="left: 500px; top: 120px;"></div>
+                    
+                    <div class="coverage-overlay" id="coverage-overlay"></div>
+                </div>
+            </div>
             
             <!-- Right Panel - Properties -->
             <div class="right-panel">
