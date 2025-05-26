@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraVisual - AV Speaker Layout App</title>
+    <title>AuraVisual - Professional AV Speaker Layout App</title>
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>AuraVisual - AV Speaker Layout App</h1>
+            <h1>AuraVisual - Professional AV Speaker Layout App</h1>
             <div class="header-buttons">
-                <button class="header-button" onclick="saveLayout()">Save</button>
-                <button class="header-button" onclick="loadLayout()">Load</button>
+                <button class="header-button" onclick="saveLayout()">Save Layout</button>
+                <button class="header-button" onclick="loadLayout()">Load Layout</button>
             </div>
         </div>
         
@@ -21,7 +21,7 @@
         <div class="main">
             <!-- Left Panel - Speaker Selection -->
             <div class="left-panel">
-                <div class="panel-header">Speaker Library</div>
+                <div class="panel-header">Professional Speaker Library</div>
                 
                 <div class="speaker-search">
                     <input type="text" class="search-input" id="speaker-search" placeholder="Search speakers..." oninput="filterSpeakers()">
@@ -51,8 +51,8 @@
                     <button class="tool-button" id="move-tool" onclick="selectTool('move')">↔️ Move</button>
                     
                     <div class="view-controls">
-                        <button class="tool-button active" id="top-view-btn" onclick="switchView('top')">Top View</button>
-                        <button class="tool-button" id="side-view-btn" onclick="switchView('side')">Side View</button>
+                        <button class="tool-button active" id="top-view-btn" onclick="switchView('top')">📐 Top View</button>
+                        <button class="tool-button" id="side-view-btn" onclick="switchView('side')">📏 Side View</button>
                     </div>
                     
                     <div class="toggle-control">
@@ -66,10 +66,10 @@
                     </div>
                 </div>
                 
-                <div class="room-editor" id="room-editor">
-                    <div class="room-view-label" id="room-view-label">Top View</div>
+                <div class="room-editor top-view" id="room-editor">
+                    <div class="room-view-label" id="room-view-label">Top View - Floor Plan</div>
                     <div class="room">
-                        <div class="room-label">Room: 5.0m × 3.5m</div>
+                        <div class="room-label">Room: 8.0m × 5.0m × 3.5m</div>
                     </div>
                     
                     <!-- Example placed speakers -->
@@ -88,10 +88,15 @@
             
             <!-- Right Panel - Properties -->
             <div class="right-panel">
-                <div class="panel-header">Properties</div>
+                <div class="panel-header">Room & Speaker Properties</div>
                 
-                <!-- Room Settings Section -->
-                <div class="section-header">Room Settings</div>
+                <!-- 3D Room Settings Section -->
+                <div class="section-header">3D Room Dimensions</div>
+                
+                <div class="property">
+                    <div class="property-label">Length:</div>
+                    <input type="number" class="property-value" id="room-length" value="8.0" min="2" max="30" step="0.1" onchange="updateRoomSize()"> m
+                </div>
                 
                 <div class="property">
                     <div class="property-label">Width:</div>
@@ -112,13 +117,18 @@
                 </div>
                 
                 <div class="property">
-                    <div class="property-label">X Position:</div>
-                    <input type="text" class="property-value" id="x-position" value="3.0 m" onchange="updatePosition()">
+                    <div class="property-label">X Position (Length):</div>
+                    <input type="text" class="property-value" id="x-position" value="4.0 m" onchange="updatePosition()">
                 </div>
                 
                 <div class="property">
-                    <div class="property-label">Y Position:</div>
-                    <input type="text" class="property-value" id="y-position" value="1.2 m" onchange="updatePosition()">
+                    <div class="property-label">Y Position (Width):</div>
+                    <input type="text" class="property-value" id="y-position" value="2.5 m" onchange="updatePosition()">
+                </div>
+                
+                <div class="property">
+                    <div class="property-label">Mount Height:</div>
+                    <input type="text" class="property-value" id="mount-height" value="1.2 m" onchange="updateMountHeight()">
                 </div>
                 
                 <div class="property">
@@ -142,17 +152,12 @@
                 </div>
                 
                 <div class="property">
-                    <div class="property-label">Mount Height:</div>
-                    <input type="text" class="property-value" id="mount-height" value="1.2 m" onchange="updateMountHeight()">
-                </div>
-                
-                <div class="property">
                     <div class="property-label">Power:</div>
                     <input type="text" class="property-value" id="power" value="100W" onchange="updatePower()">
                 </div>
                 
                 <!-- Calculation Settings Section -->
-                <div class="section-header">Calculation Settings</div>
+                <div class="section-header">Acoustic Settings</div>
                 
                 <div class="property">
                     <div class="property-label">Target SPL:</div>
@@ -160,50 +165,59 @@
                 </div>
                 
                 <div class="property">
-                    <div class="property-label">Ear Height:</div>
+                    <div class="property-label">Audience Height:</div>
                     <input type="text" class="property-value" id="ear-height" value="1.2 m" onchange="updateEarHeight()">
                 </div>
                 
                 <div class="legend">
-                    <div class="legend-header">SPL Legend</div>
+                    <div class="legend-header">SPL Coverage Legend</div>
                     
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #00aa00;"></div>
-                        <div>≥ 90 dB</div>
+                        <div>≥ 90 dB (Excellent)</div>
                     </div>
                     
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #aaaa00;"></div>
-                        <div>85-90 dB</div>
+                        <div>85-90 dB (Good)</div>
                     </div>
                     
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #aa0000;"></div>
-                        <div>< 85 dB</div>
+                        <div>< 85 dB (Poor)</div>
                     </div>
                 </div>
                 
-                <button class="action-button primary" onclick="showPremiumDialog()">Generate PDF Report</button>
-                <button class="action-button danger" onclick="deleteSelectedSpeaker()">Delete Selected</button>
+                <button class="action-button primary" onclick="showPremiumDialog()">📄 Generate PDF Report</button>
+                <button class="action-button danger" onclick="deleteSelectedSpeaker()">🗑️ Delete Selected</button>
             </div>
         </div>
         
         <!-- Status Bar -->
         <div class="status-bar">
-            <div class="status-item">Room size: 5.0m × 3.5m</div>
+            <div class="status-item">Room: 8.0m × 5.0m × 3.5m</div>
             <div class="status-item" id="speaker-count">Speakers: 3</div>
             <div class="status-item" id="average-spl">Average SPL: 87.2 dB</div>
-            <div class="status-item">Free version © 2025</div>
+            <div class="status-item" id="current-view">View: Top</div>
+            <div class="status-item">© 2025 AuraVisual Pro</div>
         </div>
     </div>
     
     <!-- Premium Feature Overlay -->
     <div class="premium-overlay" id="premium-overlay">
         <div class="premium-dialog">
-            <h2>Premium Feature</h2>
-            <p>PDF Report generation is available in the premium version of AuraVisual. Would you like to upgrade now?</p>
-            <button class="upgrade" onclick="upgradeToPremium()">Upgrade to Premium</button>
-            <button class="cancel" onclick="closePremiumDialog()">Cancel</button>
+            <h2>🎯 Professional Feature</h2>
+            <p>PDF Report generation with detailed acoustic analysis is available in the professional version of AuraVisual.</p>
+            <div class="premium-features">
+                <ul>
+                    <li>📊 Detailed SPL Coverage Analysis</li>
+                    <li>📐 Professional CAD Export</li>
+                    <li>🔧 Advanced Speaker Database</li>
+                    <li>📱 Mobile App Access</li>
+                </ul>
+            </div>
+            <button class="upgrade" onclick="upgradeToPremium()">Upgrade to Pro</button>
+            <button class="cancel" onclick="closePremiumDialog()">Continue with Free</button>
         </div>
     </div>
     
