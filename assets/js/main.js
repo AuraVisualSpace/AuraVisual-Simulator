@@ -163,10 +163,17 @@ function renderSpeakerList(speakers) {
         speakerEl.className = 'speaker-item';
         speakerEl.onclick = () => selectSpeakerModel(speaker.id);
         
-        // Get the appropriate icon based on speaker type
-        const iconPath = speaker.imageUrl || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="%234a6fba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="4"></circle><path d="M12 15v5"></path><path d="M8 15h8"></path><path d="M10 9.5h.01"></path><path d="M14 9.5h.01"></path></svg>`;
+        // Create simple speaker icon based on type
+        let speakerIcon = '🔊'; // Default speaker emoji
+        if (speaker.type === 'ceiling') {
+            speakerIcon = '⚪'; // Circle for ceiling speakers
+        } else if (speaker.type === 'subwoofer') {
+            speakerIcon = '⬛'; // Square for subwoofers
+        } else if (speaker.type === 'line-array') {
+            speakerIcon = '▬'; // Line for line arrays
+        }
         
-        // Determine primary mount type for icon
+        // Determine primary mount type for indicator
         let mountIconClass = '';
         if (speaker.mountTypes.includes('ceiling') || speaker.mountTypes.includes('in-ceiling')) {
             mountIconClass = 'mount-ceiling';
@@ -178,7 +185,7 @@ function renderSpeakerList(speakers) {
         
         speakerEl.innerHTML = `
             <div class="speaker-icon">
-                <img src="${iconPath}" alt="${speaker.type}">
+                <div style="font-size: 24px;">${speakerIcon}</div>
                 <div class="mount-type-indicator ${mountIconClass}"></div>
             </div>
             <div class="speaker-details">
