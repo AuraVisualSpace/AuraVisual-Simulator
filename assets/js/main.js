@@ -517,23 +517,31 @@ function handleSpeakerMouseDown(event) {
     event.target.style.zIndex = '1000';
 }
 
-// Handle mouse move
+// Handle mouse move (FIXED VERSION)
 function handleMouseMove(event) {
     if (!isDragging || !dragSpeakerId || currentTool !== 'move') return;
     
     event.preventDefault();
     
+    // Calculate new position using the corrected offset
     const newX = event.clientX - dragOffset.x;
     const newY = event.clientY - dragOffset.y;
     
+    // Get room boundaries for constraint
     const room = document.querySelector('.room');
     if (!room) return;
     
     const roomRect = room.getBoundingClientRect();
+    const roomLeft = parseFloat(room.style.left) || 100;
+    const roomTop = parseFloat(room.style.top) || 80;
+    const roomWidth = parseFloat(room.style.width) || 400;
+    const roomHeight = parseFloat(room.style.height) || 280;
     
-    const constrainedX = Math.max(roomRect.left + 10, Math.min(roomRect.right - 30, newX));
-    const constrainedY = Math.max(roomRect.top + 10, Math.min(roomRect.bottom - 30, newY));
+    // Constrain to room boundaries (with speaker size padding)
+    const constrainedX = Math.max(roomLeft + 10, Math.min(roomLeft + roomWidth - 30, newX));
+    const constrainedY = Math.max(roomTop + 10, Math.min(roomTop + roomHeight - 30, newY));
     
+    // Update speaker position
     const speakerEl = document.getElementById('speaker' + dragSpeakerId);
     const coverageEl = document.getElementById('coverage' + dragSpeakerId);
     
@@ -547,6 +555,7 @@ function handleMouseMove(event) {
         coverageEl.style.top = constrainedY + 'px';
     }
     
+    // Update speaker data
     const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
     if (speakerIndex !== -1) {
         placedSpeakers[speakerIndex].x = constrainedX;
@@ -559,7 +568,6 @@ function handleMouseMove(event) {
         }
     }
 }
-
 // Handle mouse up
 function handleMouseUp(event) {
     if (!isDragging || !dragSpeakerId) return;
