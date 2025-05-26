@@ -1132,4 +1132,245 @@ function loadLayout() {
         }
     };
     input.click();
+    
+// Variables for drag functionality
+let isDragging = false;
+let dragSpeakerId = null;
+let dragOffset = { x: 0, y: 0 };
+
+// Enhanced select tool function with drag functionality
+function selectTool(tool) {
+    currentTool = tool;
+    
+    // Update tool button styling
+    document.getElementById('speaker-tool').classList.toggle('active', tool === 'speaker');
+    document.getElementById('move-tool').classList.toggle('active', tool === 'move');
+    
+    // Update cursor on room editor
+    const roomEditor = document.getElementById('room-editor');
+    roomEditor.style.cursor = tool === 'speaker' ? 'crosshair' : 'default';
+    
+    // Enable/disable dragging based on tool
+    if (tool === 'move') {
+        enableSpeakerDragging();
+    } else {
+        disableSpeakerDragging();
+    }
+}
+
+// Enable speaker dragging functionality
+function enableSpeakerDragging() {
+    // Add drag event listeners to all existing speakers
+    const allSpeakers = document.querySelectorAll('.speaker');
+    allSpeakers.forEach(speaker => {
+        speaker.style.cursor = 'grab';
+        speaker.addEventListener('mousedown', handleSpeakerMouseDown);
+    });
+    
+    // Add global mouse event listeners
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+}
+
+// Disable speaker dragging functionality
+function disableSpeakerDragging() {
+    // Remove drag event listeners from all speakers
+    const allSpeakers = document.querySelectorAll('.speaker');
+    allSpeakers.forEach(speaker => {
+        speaker.style.cursor = 'pointer';
+        speaker.removeEventListener('mousedown', handleSpeakerMouseDown);
+    });
+    
+    // Clean up any ongoing drag
+    isDragging = false;
+    dragSpeakerId = null;
+}
+
+// Handle mouse down on speaker (start drag)
+function handleSpeakerMouseDown(event) {
+    if (currentTool !== 'move') return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Get speaker ID from element
+    const speakerId = event.target.id.replace('speaker', '');
+    dragSpeakerId = parseInt(speakerId);
+    
+    // Select the speaker being dragged
+    selectSpeaker(dragSpeakerId);
+    
+    // Calculate offset from mouse to speaker center
+    const speakerRect = event.target.getBoundingClientRect();
+    dragOffset.x = event.clientX - speakerRect.left - speakerRect.width / 2;
+    dragOffset.y = event.clientY - speakerRect.top - speakerRect.height / 2;
+    
+    // Start dragging
+    isDragging = true;
+    event.target.style.cursor = 'grabbing';
+    event.target.style.zIndex = '1000';
+    
+    console.log(`Started dragging speaker ${dragSpeakerId}`);
+}
+
+// Handle mouse move (during drag)
+function handleMouseMove(event) {
+    if (!isDragging || !dragSpeakerId || currentTool !== 'move') return;
+    
+    event.preventDefault();
+    
+    // Calculate new position
+    const newX = event.clientX - dragOffset.x;
+    const newY = event.clientY - dragOffset.y;
+    
+    // Get room boundaries
+    const room = document.querySelector('.room');
+    if (!room) return;
+    
+    const roomRect = room.getBoundingClientRect();
+    const roomLeft = roomRect.left;
+    const roomTop = roomRect.top;
+    const roomRight = roomRect.right;
+    const roomBottom = roomRect.bottom;
+    
+    // Constrain to room boundaries (with some padding for speaker size)
+    const constrainedX = Math.max(roomLeft + 10, Math.min(roomRight - 30, newX));
+    const constrainedY = Math.max(roomTop + 10, Math.min(roomBottom - 30, newY));
+    
+    // Update speaker position
+    const speakerEl = document.getElementById('speaker' + dragSpeakerId);
+    const coverageEl = document.getElementById('coverage' + dragSpeakerId);
+    
+    if (speakerEl) {
+        speakerEl.style.left = constrainedX + 'px';
+        speakerEl.style.top = constrainedY + 'px';
+    }
+    
+    if (coverageEl) {
+        coverageEl.style.left = constrainedX + 'px';
+        coverageEl.style.top = constrainedY + 'px';
+    }
+    
+    // Update speaker data in memory
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].x = constrainedX;
+        placedSpeakers[speakerIndex].y = constrainedY;
+        
+        // Convert to meters for storage
+        placedSpeakers[speakerIndex].actualX = parseFloat(pixelsToMeters(constrainedX, true));
+        placedSpeakers[speakerIndex].actualY = parseFloat(pixelsToMeters(constrainedY, false));
+        
+        // Update properties panel in real-time
+        updatePropertiesPanel(dragSpeakerId);
+    }
+}
+
+// Handle mouse up (end drag)
+function handleMouseUp(event) {
+    if (!isDragging || !dragSpeakerId) return;
+    
+    // End dragging
+    isDragging = false;
+    
+    const speakerEl = document.getElementById('speaker' + dragSpeakerId);
+    if (speakerEl) {
+        speakerEl.style.cursor = 'grab';
+        speakerEl.style.zIndex = '';
+    }
+    
+    console.log(`Finished dragging speaker ${dragSpeakerId}`);
+    
+    // Get final position in meters
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
+    if (speakerIndex !== -1) {
+        const finalX = placedSpeakers[speakerIndex].actualX;
+        const finalY = placedSpeakers[speakerIndex].actualY;
+        console.log(`Speaker ${dragSpeakerId} moved to: ${finalX}m, ${finalY}m`);
+    }
+    
+    dragSpeakerId = null;
+}
+
+// Enhanced createSpeakerElement function that supports dragging
+function createSpeakerElementWithDrag(speaker) {
+    const roomEditor = document.getElementById('room-editor');
+    
+    // Create speaker element
+    const speakerEl = document.createElement('div');
+    speakerEl.className = `speaker speaker-mount-${speaker.mountType}`;
+    speakerEl.id = 'speaker' + speaker.id;
+    speakerEl.onclick = (e) => {
+        e.stopPropagation();
+        if (currentTool === 'speaker') {
+            selectSpeaker(speaker.id);
+        }
+    };
+    speakerEl.style.left = speaker.x + 'px';
+    speakerEl.style.top = speaker.y + 'px';
+    
+    // Add drag capability if move tool is active
+    if (currentTool === 'move') {
+        speakerEl.style.cursor = 'grab';
+        speakerEl.addEventListener('mousedown', handleSpeakerMouseDown);
+    }
+    
+    // Create coverage element
+    const coverageEl = document.createElement('div');
+    coverageEl.className = 'speaker-coverage';
+    coverageEl.id = 'coverage' + speaker.id;
+    coverageEl.style.left = speaker.x + 'px';
+    coverageEl.style.top = speaker.y + 'px';
+    coverageEl.style.display = coverageVisible ? 'block' : 'none';
+    
+    // Add elements to the room editor
+    roomEditor.appendChild(speakerEl);
+    roomEditor.appendChild(coverageEl);
+}
+
+// Update the existing createSpeakerElement function
+function createSpeakerElement(speaker) {
+    createSpeakerElementWithDrag(speaker);
+}
+
+// Add dragging support to existing demo speakers
+function addDragToExistingSpeakers() {
+    const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
+    demoSpeakers.forEach(speakerId => {
+        const speakerEl = document.getElementById(speakerId);
+        if (speakerEl && currentTool === 'move') {
+            speakerEl.style.cursor = 'grab';
+            speakerEl.addEventListener('mousedown', function(event) {
+                // Create a temporary speaker object for demo speakers
+                const tempId = parseInt(speakerId.replace('speaker', ''));
+                dragSpeakerId = tempId;
+                handleSpeakerMouseDown(event);
+            });
+        }
+    });
+}
+
+// Enhanced tool selection with visual feedback
+function selectToolEnhanced(tool) {
+    currentTool = tool;
+    
+    // Update tool button styling
+    document.getElementById('speaker-tool').classList.toggle('active', tool === 'speaker');
+    document.getElementById('move-tool').classList.toggle('active', tool === 'move');
+    
+    // Update cursor and instructions
+    const roomEditor = document.getElementById('room-editor');
+    if (tool === 'speaker') {
+        roomEditor.style.cursor = 'crosshair';
+        roomEditor.title = 'Click to place speakers';
+        disableSpeakerDragging();
+    } else if (tool === 'move') {
+        roomEditor.style.cursor = 'default';
+        roomEditor.title = 'Drag speakers to move them';
+        enableSpeakerDragging();
+        addDragToExistingSpeakers();
+    }
+    
+    console.log(`Tool switched to: ${tool}`);
+}
 }
