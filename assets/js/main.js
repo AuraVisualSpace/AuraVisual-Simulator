@@ -1,4 +1,7 @@
-// Speaker database with sample data
+// AuraVisual - Professional AV Speaker Layout Application
+// Complete JavaScript with 3D Room Support and Drag Functionality
+
+// Professional Speaker Database
 const speakerDatabase = {
     "speakers": [
         {
@@ -126,63 +129,49 @@ const speakerDatabase = {
     ]
 };
 
-// Global variables for app state
+// Global application state variables
 let placedSpeakers = [];
-let nextSpeakerId = 1;
+let nextSpeakerId = 1000; // Start with higher numbers for user-placed speakers
 let selectedSpeakerId = null;
 let selectedDatabaseSpeakerId = null;
 let coverageVisible = true;
 let splValuesVisible = false;
-let currentView = 'top';
-let currentTool = 'speaker';
+let currentView = 'top'; // 'top' or 'side'
+let currentTool = 'speaker'; // 'speaker' or 'move'
 
-// Initialize when page loads
+// Drag functionality variables
+let isDragging = false;
+let dragSpeakerId = null;
+let dragOffset = { x: 0, y: 0 };
+
+// Initialize application when page loads
 window.onload = function() {
+    console.log('AuraVisual Professional AV Layout App - Initializing...');
+    
+    // Initialize core systems
     initializeSpeakerDatabase();
+    initializeEventHandlers();
     
-    // Set up room editor click handler for adding speakers
-    document.getElementById('room-editor').addEventListener('click', function(event) {
-        if (event.target === this || event.target.className === 'room' || event.target.className === 'room-label') {
-            if (currentTool === 'speaker') {
-                addSpeakerToRoom(event.clientX, event.clientY);
-            }
-        }
-    });
-    
-    // Initialize room size first
+    // Initialize 3D room
     setTimeout(() => {
         initializeRoomSize();
+        applyViewStyling();
     }, 100);
     
-    // Initialize with first speaker selected and a default speaker model
+    // Initialize with first speaker selected
     setTimeout(() => {
         selectSpeaker(1);
         selectSpeakerModel('jbl-srx835p');
+        updateStatusBar();
     }, 200);
     
-    // Add event listeners for real-time room size updates
-    setTimeout(() => {
-        const widthInput = document.getElementById('room-width');
-        const heightInput = document.getElementById('room-height');
-        
-        if (widthInput && heightInput) {
-            let roomSizeTimeout;
-            
-            widthInput.addEventListener('input', () => {
-                clearTimeout(roomSizeTimeout);
-                roomSizeTimeout = setTimeout(updateRoomSize, 300);
-            });
-            
-            heightInput.addEventListener('input', () => {
-                clearTimeout(roomSizeTimeout);
-                roomSizeTimeout = setTimeout(updateRoomSize, 300);
-            });
-        }
-    }, 300);
+    console.log('AuraVisual initialized successfully!');
 };
 
-// Initialize the speaker database
+// Initialize the professional speaker database
 function initializeSpeakerDatabase() {
+    console.log('Loading professional speaker database...');
+    
     // Populate manufacturer filter
     const manufacturerSelect = document.getElementById('manufacturer-filter');
     speakerDatabase.manufacturers.forEach(manufacturer => {
@@ -210,17 +199,55 @@ function initializeSpeakerDatabase() {
         mountSelect.appendChild(option);
     });
     
-    // Initial rendering of speakers
+    // Render initial speaker list
     renderSpeakerList(speakerDatabase.speakers);
+    console.log(`Loaded ${speakerDatabase.speakers.length} professional speakers`);
 }
 
-// Render the speaker list with working icons
+// Initialize event handlers
+function initializeEventHandlers() {
+    // Room editor click handler for placing speakers
+    const roomEditor = document.getElementById('room-editor');
+    roomEditor.addEventListener('click', function(event) {
+        if (event.target === this || event.target.className === 'room' || event.target.className === 'room-label') {
+            if (currentTool === 'speaker') {
+                addSpeakerToRoom(event.clientX, event.clientY);
+            }
+        }
+    });
+    
+    // Real-time room size update listeners
+    setTimeout(() => {
+        const lengthInput = document.getElementById('room-length');
+        const widthInput = document.getElementById('room-width');  
+        const heightInput = document.getElementById('room-height');
+        
+        if (lengthInput && widthInput && heightInput) {
+            let roomSizeTimeout;
+            
+            const updateRoom = () => {
+                clearTimeout(roomSizeTimeout);
+                roomSizeTimeout = setTimeout(updateRoomSize, 300);
+            };
+            
+            lengthInput.addEventListener('input', updateRoom);
+            widthInput.addEventListener('input', updateRoom);
+            heightInput.addEventListener('input', updateRoom);
+        }
+    }, 300);
+    
+    // Global mouse event listeners for dragging
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+}
+
+// Render speaker list with professional styling and icons
 function renderSpeakerList(speakers) {
     const container = document.getElementById('speaker-list-container');
-    container.innerHTML = ''; // Clear existing content
+    container.innerHTML = '';
     
     if (speakers.length === 0) {
-        container.innerHTML = '<div class="no-results">No speakers match your criteria</div>';
+        container.innerHTML = '<div class="no-results">No speakers match your search criteria</div>';
         return;
     }
     
@@ -229,55 +256,32 @@ function renderSpeakerList(speakers) {
         speakerEl.className = 'speaker-item';
         speakerEl.onclick = () => selectSpeakerModel(speaker.id);
         
-        // Create simple speaker icon based on type and manufacturer
-        let speakerIcon = '🔊'; // Default speaker emoji
+        // Professional speaker icons based on type and manufacturer
+        let speakerIcon = '🔊';
         let iconColor = '#4a6fba';
         
-        // Different icons for different types
-        if (speaker.type === 'ceiling') {
-            speakerIcon = '⚪';
-            iconColor = '#6fa8dc';
-        } else if (speaker.type === 'subwoofer') {
-            speakerIcon = '⬛';
-            iconColor = '#ff6b6b';
-        } else if (speaker.type === 'line-array') {
-            speakerIcon = '▬';
-            iconColor = '#4ecdc4';
-        } else if (speaker.type === 'point-source') {
-            speakerIcon = '🔊';
-            iconColor = '#4a6fba';
+        switch(speaker.type) {
+            case 'ceiling':
+                speakerIcon = '⚪';
+                iconColor = '#6fa8dc';
+                break;
+            case 'subwoofer':
+                speakerIcon = '⬛';
+                iconColor = '#ff6b6b';
+                break;
+            case 'line-array':
+                speakerIcon = '▬';
+                iconColor = '#4ecdc4';
+                break;
+            default:
+                speakerIcon = '🔊';
+                iconColor = '#4a6fba';
         }
         
-        // Add manufacturer-specific styling
-        let manufacturerClass = '';
-        switch(speaker.manufacturer.toLowerCase()) {
-            case 'jbl':
-                manufacturerClass = 'jbl';
-                break;
-            case 'qsc':
-                manufacturerClass = 'qsc';
-                break;
-            case 'ev':
-                manufacturerClass = 'ev';
-                break;
-            case 'yamaha':
-                manufacturerClass = 'yamaha';
-                break;
-            case 'bose':
-                manufacturerClass = 'bose';
-                break;
-            case 'martin audio':
-                manufacturerClass = 'martin';
-                break;
-            case 'danley':
-                manufacturerClass = 'danley';
-                break;
-            case 'meyer sound':
-                manufacturerClass = 'meyer';
-                break;
-        }
+        // Manufacturer-specific styling
+        let manufacturerClass = speaker.manufacturer.toLowerCase().replace(/\s+/g, '');
         
-        // Determine primary mount type for indicator
+        // Mount type indicator
         let mountIndicator = '';
         if (speaker.mountTypes.includes('ceiling') || speaker.mountTypes.includes('in-ceiling')) {
             mountIndicator = '<div class="mount-indicator ceiling">C</div>';
@@ -302,7 +306,7 @@ function renderSpeakerList(speakers) {
             </div>
         `;
         
-        // Highlight if this is the selected model
+        // Highlight selected speaker
         if (speaker.id === selectedDatabaseSpeakerId) {
             speakerEl.classList.add('selected');
         }
@@ -311,29 +315,24 @@ function renderSpeakerList(speakers) {
     });
 }
 
-// Filter speakers based on search input and dropdown selections
+// Filter speakers based on search and filter criteria
 function filterSpeakers() {
     const searchTerm = document.getElementById('speaker-search').value.toLowerCase();
     const manufacturer = document.getElementById('manufacturer-filter').value;
     const type = document.getElementById('type-filter').value;
     const mountType = document.getElementById('mount-filter').value;
     
-    // Apply filters
     const filteredSpeakers = speakerDatabase.speakers.filter(speaker => {
-        // Search term filter
         const matchesSearch = 
             speaker.manufacturer.toLowerCase().includes(searchTerm) ||
             speaker.model.toLowerCase().includes(searchTerm);
         
-        // Manufacturer filter
         const matchesManufacturer = 
             manufacturer === '' || speaker.manufacturer === manufacturer;
         
-        // Type filter
         const matchesType = 
             type === '' || speaker.type === type;
         
-        // Mount type filter
         const matchesMountType = 
             mountType === '' || speaker.mountTypes.includes(mountType);
         
@@ -341,9 +340,10 @@ function filterSpeakers() {
     });
     
     renderSpeakerList(filteredSpeakers);
+    console.log(`Filtered to ${filteredSpeakers.length} speakers`);
 }
 
-// Function to find a speaker by ID in the database
+// Get speaker data by ID from database
 function getSpeakerById(speakerId) {
     return speakerDatabase.speakers.find(speaker => speaker.id === speakerId);
 }
@@ -351,16 +351,14 @@ function getSpeakerById(speakerId) {
 // Select a speaker model from the database
 function selectSpeakerModel(speakerId) {
     selectedDatabaseSpeakerId = speakerId;
-    
-    // Get speaker data from database
     const speakerData = getSpeakerById(speakerId);
     
-    // Highlight the selected speaker in the list
+    // Update visual selection in speaker list
     document.querySelectorAll('.speaker-item').forEach(el => {
         el.classList.remove('selected');
     });
     
-    // Find and highlight the clicked element
+    // Find and highlight the selected speaker
     const speakerElements = document.querySelectorAll('.speaker-item');
     for (let i = 0; i < speakerElements.length; i++) {
         if (speakerElements[i].querySelector('.speaker-model').textContent === speakerData.model) {
@@ -369,7 +367,7 @@ function selectSpeakerModel(speakerId) {
         }
     }
     
-    // If a speaker is currently selected in the room, update its model
+    // Update selected speaker's model if one is selected
     if (selectedSpeakerId !== null) {
         const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
         if (speakerIndex !== -1) {
@@ -377,32 +375,28 @@ function selectSpeakerModel(speakerId) {
             updatePropertiesPanel(selectedSpeakerId);
         }
     }
-}
-
-// Select a tool
-function selectTool(tool) {
-    selectToolEnhanced(tool);
-}
-
-// Switch between top and side views
-function switchView(viewType) {
-    currentView = viewType;
     
-    // Update button states
-    document.getElementById('top-view-btn').classList.toggle('active', viewType === 'top');
-    document.getElementById('side-view-btn').classList.toggle('active', viewType === 'side');
-    
-    // Update view label
-    document.getElementById('room-view-label').textContent = viewType === 'top' ? 'Top View' : 'Side View';
+    console.log(`Selected speaker model: ${speakerData.manufacturer} ${speakerData.model}`);
 }
 
-// Enhanced room sizing with 3D dimensions (Length × Width × Height)
+// === 3D ROOM MANAGEMENT FUNCTIONS ===
+
+// Initialize 3D room with default dimensions
+function initializeRoomSize() {
+    document.getElementById('room-length').value = 8.0;
+    document.getElementById('room-width').value = 5.0;
+    document.getElementById('room-height').value = 3.5;
+    updateRoomSize();
+    console.log('3D Room initialized: 8.0m × 5.0m × 3.5m');
+}
+
+// Update room size with 3D dimensions (Length × Width × Height)
 function updateRoomSize() {
     const length = parseFloat(document.getElementById('room-length').value);
     const width = parseFloat(document.getElementById('room-width').value);
     const height = parseFloat(document.getElementById('room-height').value);
     
-    // Validate input
+    // Validate dimensions
     if (isNaN(length) || length < 2 || length > 30) {
         alert('Room length must be between 2m and 30m');
         document.getElementById('room-length').value = 8.0;
@@ -422,32 +416,29 @@ function updateRoomSize() {
     }
     
     // Calculate display dimensions based on current view
-    let displayWidth, displayHeight;
-    let dimensionLabel;
-    
-    const baseScale = 50; // 1 meter = 50 pixels (base scale)
+    let displayWidth, displayHeight, dimensionLabel;
+    const baseScale = 50; // 1 meter = 50 pixels
     const maxDisplayWidth = 600;
     const maxDisplayHeight = 400;
     
     if (currentView === 'top') {
-        // Top view shows Length × Width
+        // Top view: Length × Width (floor plan)
         displayWidth = length * baseScale;
         displayHeight = width * baseScale;
         dimensionLabel = `${length}m × ${width}m (H: ${height}m)`;
     } else {
-        // Side view shows Length × Height
+        // Side view: Length × Height (elevation)
         displayWidth = length * baseScale;
         displayHeight = height * baseScale;
         dimensionLabel = `${length}m × ${height}m (W: ${width}m)`;
     }
     
-    // Apply scaling if room is too large for display area
+    // Apply intelligent scaling for large rooms
     let scaleFactor = 1;
     if (displayWidth > maxDisplayWidth || displayHeight > maxDisplayHeight) {
         const scaleX = maxDisplayWidth / displayWidth;
         const scaleY = maxDisplayHeight / displayHeight;
         scaleFactor = Math.min(scaleX, scaleY);
-        
         displayWidth *= scaleFactor;
         displayHeight *= scaleFactor;
     }
@@ -455,14 +446,13 @@ function updateRoomSize() {
     // Update room visual elements
     const room = document.querySelector('.room');
     const overlay = document.querySelector('.coverage-overlay');
-    const roomEditor = document.getElementById('room-editor');
     
     if (room) {
         // Update room dimensions
         room.style.width = displayWidth + 'px';
         room.style.height = displayHeight + 'px';
         
-        // Store all 3D dimensions for calculations
+        // Store all 3D dimensions
         room.setAttribute('data-actual-length', length);
         room.setAttribute('data-actual-width', width);
         room.setAttribute('data-actual-height', height);
@@ -470,14 +460,14 @@ function updateRoomSize() {
         room.setAttribute('data-display-width', displayWidth);
         room.setAttribute('data-display-height', displayHeight);
         
-        // Center the room in the editor
+        // Center room in editor
         const centerX = Math.max(100, (800 - displayWidth) / 2);
         const centerY = Math.max(80, (500 - displayHeight) / 2);
         
         room.style.left = centerX + 'px';
         room.style.top = centerY + 'px';
         
-        // Update overlay to match room position and size
+        // Update coverage overlay
         if (overlay) {
             overlay.style.width = displayWidth + 'px';
             overlay.style.height = displayHeight + 'px';
@@ -499,47 +489,44 @@ function updateRoomSize() {
         roomLabel.textContent = labelText;
     }
     
-    // Update status bar
-    const statusItems = document.querySelectorAll('.status-item');
-    if (statusItems.length > 0) {
-        statusItems[0].textContent = `Room: ${length}m × ${width}m × ${height}m`;
-    }
-    
     // Apply view-specific styling
     applyViewStyling();
     
-    // Reposition existing speakers based on current view
+    // Reposition speakers for current view
     repositionSpeakersForView();
     
-    console.log(`Room updated: ${length}m × ${width}m × ${height}m | View: ${currentView} | Display: ${Math.round(displayWidth)}×${Math.round(displayHeight)}px`);
+    // Update status bar
+    updateStatusBar();
+    
+    console.log(`Room updated: ${length}m × ${width}m × ${height}m | View: ${currentView} | Scale: ${Math.round(scaleFactor * 100)}%`);
 }
 
-// Add dimension labels to room
+// Add dimension labels to room edges
 function updateRoomDimensionLabels(room, length, width, height) {
-    // Remove existing dimension labels
+    // Remove existing labels
     const existingLabels = room.querySelectorAll('.room-dimensions');
     existingLabels.forEach(label => label.remove());
     
     if (currentView === 'top') {
-        // Length label (bottom)
+        // Length label (bottom edge)
         const lengthLabel = document.createElement('div');
         lengthLabel.className = 'room-dimensions length';
         lengthLabel.textContent = `${length}m`;
         room.appendChild(lengthLabel);
         
-        // Width label (right side)
+        // Width label (right edge)
         const widthLabel = document.createElement('div');
         widthLabel.className = 'room-dimensions width';
         widthLabel.textContent = `${width}m`;
         room.appendChild(widthLabel);
     } else {
-        // Length label (bottom)
+        // Length label (bottom edge)
         const lengthLabel = document.createElement('div');
         lengthLabel.className = 'room-dimensions length';
         lengthLabel.textContent = `${length}m`;
         room.appendChild(lengthLabel);
         
-        // Height label (right side)
+        // Height label (right edge)
         const heightLabel = document.createElement('div');
         heightLabel.className = 'room-dimensions height';
         heightLabel.textContent = `${height}m`;
@@ -547,7 +534,7 @@ function updateRoomDimensionLabels(room, length, width, height) {
     }
 }
 
-// Enhanced switch view function with actual 3D view changes
+// Switch between top and side views with full 3D support
 function switchView(viewType) {
     const previousView = currentView;
     currentView = viewType;
@@ -556,16 +543,20 @@ function switchView(viewType) {
     document.getElementById('top-view-btn').classList.toggle('active', viewType === 'top');
     document.getElementById('side-view-btn').classList.toggle('active', viewType === 'side');
     
-    // Update view label
-    document.getElementById('room-view-label').textContent = viewType === 'top' ? 'Top View' : 'Side View';
+    // Update view label with descriptive text
+    const viewLabel = document.getElementById('room-view-label');
+    viewLabel.textContent = viewType === 'top' ? 'Top View - Floor Plan' : 'Side View - Elevation';
     
-    // Update room dimensions and view
+    // Update room dimensions and styling
     updateRoomSize();
+    
+    // Update status bar
+    updateStatusBar();
     
     console.log(`View switched from ${previousView} to ${viewType}`);
 }
 
-// Apply view-specific styling
+// Apply view-specific styling to room and speakers
 function applyViewStyling() {
     const roomEditor = document.getElementById('room-editor');
     
@@ -575,7 +566,7 @@ function applyViewStyling() {
     // Add current view class
     roomEditor.classList.add(currentView + '-view');
     
-    // Update all speakers with height data for side view
+    // Update speakers for current view
     if (currentView === 'side') {
         updateSpeakersForSideView();
     } else {
@@ -583,58 +574,35 @@ function applyViewStyling() {
     }
 }
 
-// Update speakers for side view (show elevation)
+// Update speakers for side view (show elevation and mount heights)
 function updateSpeakersForSideView() {
     // Update placed speakers
     placedSpeakers.forEach(speaker => {
         const speakerEl = document.getElementById('speaker' + speaker.id);
         if (speakerEl) {
-            speakerEl.setAttribute('data-height', speaker.mountHeight?.toFixed(1) + 'm');
-            
-            // Position speaker vertically based on mount height
-            const room = document.querySelector('.room');
-            if (room) {
-                const roomHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-                const displayHeight = parseFloat(room.style.height);
-                const roomTop = parseFloat(room.style.top);
-                
-                // Calculate Y position based on mount height (inverted because top of room is ceiling)
-                const heightRatio = 1 - (speaker.mountHeight || 1.2) / roomHeight;
-                const newY = roomTop + (heightRatio * displayHeight);
-                
-                speakerEl.style.top = newY + 'px';
-                
-                const coverageEl = document.getElementById('coverage' + speaker.id);
-                if (coverageEl) {
-                    coverageEl.style.top = newY + 'px';
-                }
-            }
+            speakerEl.setAttribute('data-height', (speaker.mountHeight || 1.2).toFixed(1) + 'm');
         }
     });
     
-    // Update demo speakers
+    // Update demo speakers with default heights
     const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
-    demoSpeakers.forEach((speakerId, index) => {
+    demoSpeakers.forEach(speakerId => {
         const speakerEl = document.getElementById(speakerId);
         if (speakerEl) {
-            speakerEl.setAttribute('data-height', '1.2m'); // Default height for demo speakers
+            speakerEl.setAttribute('data-height', '1.2m');
         }
     });
 }
 
-// Update speakers for top view (show floor plan)
+// Update speakers for top view (remove height attributes)
 function updateSpeakersForTopView() {
-    // Remove height attributes and reset positions
     const allSpeakers = document.querySelectorAll('.speaker');
     allSpeakers.forEach(speaker => {
         speaker.removeAttribute('data-height');
     });
-    
-    // Reposition speakers back to their original X,Y positions
-    repositionSpeakersForView();
 }
 
-// Reposition speakers when view changes
+// Reposition all speakers when view changes
 function repositionSpeakersForView() {
     const room = document.querySelector('.room');
     if (!room) return;
@@ -644,7 +612,7 @@ function repositionSpeakersForView() {
     const roomWidth = parseFloat(room.style.width) || 400;
     const roomHeight = parseFloat(room.style.height) || 280;
     
-    // Update positioned speakers from placedSpeakers array
+    // Reposition user-placed speakers
     placedSpeakers.forEach(speaker => {
         const speakerEl = document.getElementById('speaker' + speaker.id);
         const coverageEl = document.getElementById('coverage' + speaker.id);
@@ -653,7 +621,7 @@ function repositionSpeakersForView() {
             let newX, newY;
             
             if (currentView === 'top') {
-                // Top view: use actualX (length) and actualY (width) positions
+                // Top view: use length (X) and width (Y) positions
                 const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
                 const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
                 
@@ -664,30 +632,30 @@ function repositionSpeakersForView() {
                 newY = roomTop + (yPercent * roomHeight);
                 
             } else {
-                // Side view: use actualX (length) and mount height for positioning
+                // Side view: use length (X) and mount height for Y position
                 const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
                 const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
                 
                 const xPercent = (speaker.actualX || actualLength/2) / actualLength;
-                const heightRatio = 1 - (speaker.mountHeight || 1.2) / actualHeight; // Inverted for display
+                const heightRatio = 1 - (speaker.mountHeight || 1.2) / actualHeight; // Inverted
                 
                 newX = roomLeft + (xPercent * roomWidth);
                 newY = roomTop + (heightRatio * roomHeight);
             }
             
-            // Update speaker position
+            // Update positions
             speakerEl.style.left = newX + 'px';
             speakerEl.style.top = newY + 'px';
             coverageEl.style.left = newX + 'px';
             coverageEl.style.top = newY + 'px';
             
-            // Update speaker's stored pixel position
+            // Update stored pixel positions
             speaker.x = newX;
             speaker.y = newY;
         }
     });
     
-    // Update demo speakers for the current view
+    // Reposition demo speakers
     const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
     demoSpeakers.forEach((speakerId, index) => {
         const speakerEl = document.getElementById(speakerId);
@@ -697,7 +665,7 @@ function repositionSpeakersForView() {
             let newX, newY;
             
             if (currentView === 'top') {
-                // Distribute evenly across width
+                // Distribute evenly across room width
                 const spacing = roomWidth / (demoSpeakers.length + 1);
                 newX = roomLeft + spacing * (index + 1);
                 newY = roomTop + (roomHeight * 0.3);
@@ -705,7 +673,7 @@ function repositionSpeakersForView() {
                 // Side view: distribute across length, position at typical height
                 const spacing = roomWidth / (demoSpeakers.length + 1);
                 newX = roomLeft + spacing * (index + 1);
-                newY = roomTop + (roomHeight * 0.7); // 70% down from ceiling (1.2m height in 3.5m room)
+                newY = roomTop + (roomHeight * 0.65); // ~1.2m in 3.5m room
             }
             
             speakerEl.style.left = newX + 'px';
@@ -716,767 +684,9 @@ function repositionSpeakersForView() {
     });
 }
 
-// Initialize 3D room size when page loads
-function initializeRoomSize() {
-    // Set default 3D room dimensions
-    document.getElementById('room-length').value = 8.0;
-    document.getElementById('room-width').value = 5.0;
-    document.getElementById('room-height').value = 3.5;
-    
-    // Apply the room size
-    updateRoomSize();
-}
+// === TOOL SELECTION AND DRAG FUNCTIONALITY ===
 
-// Enhanced properties panel update for 3D coordinates
-function updatePropertiesPanel(speakerId) {
-    const speaker = placedSpeakers.find(s => s.id === speakerId);
-    if (!speaker) {
-        // Handle static speakers for demo
-        const speakerData = getSpeakerById(selectedDatabaseSpeakerId || 'jbl-srx835p');
-        document.getElementById('model-value').textContent = speakerData ? `${speakerData.manufacturer} ${speakerData.model}` : 'Demo Speaker';
-        
-        // For demo speakers, show approximate 3D positions
-        document.getElementById('x-position').value = '4.0 m'; // Length position
-        document.getElementById('y-position').value = '1.5 m'; // Width position  
-        document.getElementById('mount-height').value = '1.2 m'; // Height
-        document.getElementById('rotation').value = '0°';
-        document.getElementById('tilt').value = '0°';
-        document.getElementById('power').value = '100W';
-        return;
-    }
-    
-    const speakerData = getSpeakerById(speaker.databaseId);
-    
-    // Update values in the properties panel with 3D coordinates
-    document.getElementById('model-value').textContent = `${speakerData.manufacturer} ${speakerData.model}`;
-    document.getElementById('x-position').value = (speaker.actualX || 4.0).toFixed(1) + ' m'; // Length
-    document.getElementById('y-position').value = (speaker.actualY || 2.5).toFixed(1) + ' m'; // Width
-    document.getElementById('mount-height').value = (speaker.mountHeight || 1.2).toFixed(1) + ' m'; // Height
-    document.getElementById('rotation').value = speaker.rotation + '°';
-    document.getElementById('tilt').value = speaker.tilt + '°';
-    document.getElementById('power').value = speaker.power + 'W';
-    
-    // Update mount type dropdown
-    const mountTypeSelect = document.getElementById('mount-type');
-    mountTypeSelect.innerHTML = '';
-    
-    speakerData.mountTypes.forEach(mountType => {
-        const mountTypeInfo = speakerDatabase.mountTypes.find(mt => mt.id === mountType);
-        if (mountTypeInfo) {
-            const option = document.createElement('option');
-            option.value = mountType;
-            option.textContent = mountTypeInfo.name;
-            option.selected = (speaker.mountType === mountType);
-            mountTypeSelect.appendChild(option);
-        }
-    });
-}
-    
-    // Convert meters to pixels for display
-    const baseScale = 60; // 1 meter = 60 pixels (base scale)
-    const maxDisplayWidth = 600; // Maximum room display width
-    const maxDisplayHeight = 400; // Maximum room display height
-    
-    // Calculate initial display size
-    let displayWidth = width * baseScale;
-    let displayHeight = height * baseScale;
-    
-    // Apply scaling if room is too large for display area
-    let scaleFactor = 1;
-    if (displayWidth > maxDisplayWidth || displayHeight > maxDisplayHeight) {
-        const scaleX = maxDisplayWidth / displayWidth;
-        const scaleY = maxDisplayHeight / displayHeight;
-        scaleFactor = Math.min(scaleX, scaleY);
-        
-        displayWidth *= scaleFactor;
-        displayHeight *= scaleFactor;
-    }
-    
-    // Update room visual elements
-    const room = document.querySelector('.room');
-    const overlay = document.querySelector('.coverage-overlay');
-    
-    if (room) {
-        // Update room dimensions
-        room.style.width = displayWidth + 'px';
-        room.style.height = displayHeight + 'px';
-        
-        // Store actual dimensions for calculations
-        room.setAttribute('data-actual-width', width);
-        room.setAttribute('data-actual-height', height);
-        room.setAttribute('data-scale-factor', scaleFactor);
-        room.setAttribute('data-display-width', displayWidth);
-        room.setAttribute('data-display-height', displayHeight);
-        
-        // Center the room in the editor
-        const roomEditor = document.getElementById('room-editor');
-        const editorRect = roomEditor.getBoundingClientRect();
-        
-        // Calculate center position
-        const centerX = Math.max(100, (800 - displayWidth) / 2); // Approximate editor width
-        const centerY = Math.max(80, (500 - displayHeight) / 2); // Approximate editor height
-        
-        room.style.left = centerX + 'px';
-        room.style.top = centerY + 'px';
-        
-        // Update overlay to match room position and size
-        if (overlay) {
-            overlay.style.width = displayWidth + 'px';
-            overlay.style.height = displayHeight + 'px';
-            overlay.style.left = centerX + 'px';
-            overlay.style.top = centerY + 'px';
-        }
-    }
-    
-    // Update room label
-    const roomLabel = document.querySelector('.room-label');
-    if (roomLabel) {
-        let labelText = `Room: ${width}m × ${height}m`;
-        if (scaleFactor < 1) {
-            labelText += ` (${Math.round(scaleFactor * 100)}% scale)`;
-        }
-        roomLabel.textContent = labelText;
-    }
-    
-    // Update status bar
-    const statusItems = document.querySelectorAll('.status-item');
-    if (statusItems.length > 0) {
-        statusItems[0].textContent = `Room size: ${width}m × ${height}m`;
-    }
-    
-    // Reposition existing speakers proportionally
-    repositionExistingSpeakers();
-    
-    console.log(`Room updated: ${width}m × ${height}m | Display: ${Math.round(displayWidth)}×${Math.round(displayHeight)}px | Scale: ${Math.round(scaleFactor * 100)}%`);
-}
-
-// Reposition existing speakers when room size changes
-function repositionExistingSpeakers() {
-    const room = document.querySelector('.room');
-    if (!room) return;
-    
-    const roomLeft = parseFloat(room.style.left) || 100;
-    const roomTop = parseFloat(room.style.top) || 80;
-    const roomWidth = parseFloat(room.style.width) || 400;
-    const roomHeight = parseFloat(room.style.height) || 280;
-    
-    // Update positioned speakers from placedSpeakers array
-    placedSpeakers.forEach(speaker => {
-        const speakerEl = document.getElementById('speaker' + speaker.id);
-        const coverageEl = document.getElementById('coverage' + speaker.id);
-        
-        if (speakerEl && coverageEl) {
-            // Convert speaker's stored meter position to new pixel position
-            const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
-            const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-            
-            // Calculate speaker position as percentage of room
-            const xPercent = (speaker.actualX || 2.5) / actualWidth;
-            const yPercent = (speaker.actualY || 1.75) / actualHeight;
-            
-            // Calculate new pixel positions
-            const newX = roomLeft + (xPercent * roomWidth);
-            const newY = roomTop + (yPercent * roomHeight);
-            
-            // Update speaker position
-            speakerEl.style.left = newX + 'px';
-            speakerEl.style.top = newY + 'px';
-            coverageEl.style.left = newX + 'px';
-            coverageEl.style.top = newY + 'px';
-            
-            // Update speaker's pixel position for consistency
-            speaker.x = newX;
-            speaker.y = newY;
-        }
-    });
-    
-    // Update demo speakers (the static ones)
-    const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
-    demoSpeakers.forEach((speakerId, index) => {
-        const speakerEl = document.getElementById(speakerId);
-        const coverageEl = document.getElementById('coverage' + (index + 1));
-        
-        if (speakerEl && coverageEl) {
-            // Position demo speakers evenly across the room
-            const spacing = roomWidth / (demoSpeakers.length + 1);
-            const newX = roomLeft + spacing * (index + 1);
-            const newY = roomTop + (roomHeight * 0.3); // 30% from top
-            
-            speakerEl.style.left = newX + 'px';
-            speakerEl.style.top = newY + 'px';
-            coverageEl.style.left = newX + 'px';
-            coverageEl.style.top = newY + 'px';
-        }
-    });
-}
-
-// Convert pixel coordinates to meters for display
-function pixelsToMeters(pixels, isWidth = true) {
-    const room = document.querySelector('.room');
-    if (!room) return 0;
-    
-    const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
-    const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-    const displayWidth = parseFloat(room.getAttribute('data-display-width')) || 400;
-    const displayHeight = parseFloat(room.getAttribute('data-display-height')) || 280;
-    const roomLeft = parseFloat(room.style.left) || 100;
-    const roomTop = parseFloat(room.style.top) || 80;
-    
-    if (isWidth) {
-        const relativeX = pixels - roomLeft;
-        return Math.max(0, Math.min(actualWidth, (relativeX / displayWidth * actualWidth))).toFixed(2);
-    } else {
-        const relativeY = pixels - roomTop;
-        return Math.max(0, Math.min(actualHeight, (relativeY / displayHeight * actualHeight))).toFixed(2);
-    }
-}
-
-// Convert meters to pixel coordinates
-function metersToPixels(meters, isWidth = true) {
-    const room = document.querySelector('.room');
-    if (!room) return 0;
-    
-    const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
-    const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-    const displayWidth = parseFloat(room.getAttribute('data-display-width')) || 400;
-    const displayHeight = parseFloat(room.getAttribute('data-display-height')) || 280;
-    const roomLeft = parseFloat(room.style.left) || 100;
-    const roomTop = parseFloat(room.style.top) || 80;
-    
-    if (isWidth) {
-        return roomLeft + (meters / actualWidth * displayWidth);
-    } else {
-        return roomTop + (meters / actualHeight * displayHeight);
-    }
-}
-
-// SPEAKER PLACEMENT AND MANAGEMENT
-
-// Enhanced add speaker function that works with dynamic room sizing
-function addSpeakerToRoom(clientX, clientY) {
-    if (!selectedDatabaseSpeakerId) {
-        alert('Please select a speaker model first');
-        return;
-    }
-    
-    const room = document.querySelector('.room');
-    if (!room) return;
-    
-    const roomRect = room.getBoundingClientRect();
-    
-    // Check if click is within room bounds
-    if (clientX < roomRect.left || clientX > roomRect.right || clientY < roomRect.top || clientY > roomRect.bottom) {
-        return; // Click was outside room
-    }
-    
-    const speakerData = getSpeakerById(selectedDatabaseSpeakerId);
-    const defaultMountType = speakerData.mountTypes[0];
-    
-    // Convert click position to room-relative coordinates
-    const x = clientX - roomRect.left + parseFloat(room.style.left);
-    const y = clientY - roomRect.top + parseFloat(room.style.top);
-    
-    // Convert click position to meters
-    const actualX = parseFloat(pixelsToMeters(x, true));
-    const actualY = parseFloat(pixelsToMeters(y, false));
-    
-    // Create new speaker object
-    const newSpeaker = {
-        id: nextSpeakerId++,
-        databaseId: selectedDatabaseSpeakerId,
-        x: x, // Pixel position for display
-        y: y, // Pixel position for display
-        actualX: actualX, // Actual position in meters
-        actualY: actualY, // Actual position in meters
-        mountType: defaultMountType,
-        mountHeight: defaultMountType === 'ceiling' || defaultMountType === 'in-ceiling' ? 3.0 : 1.2, // In meters
-        rotation: 0,
-        tilt: defaultMountType === 'ceiling' || defaultMountType === 'in-ceiling' ? 90 : 0,
-        power: Math.round(speakerData.power / 10)
-    };
-    
-    placedSpeakers.push(newSpeaker);
-    createSpeakerElement(newSpeaker);
-    selectSpeaker(newSpeaker.id);
-    
-    // Update speaker count
-    document.getElementById('speaker-count').textContent = `Speakers: ${placedSpeakers.length}`;
-}
-
-// Create a speaker element in the DOM
-function createSpeakerElement(speaker) {
-    const roomEditor = document.getElementById('room-editor');
-    
-    // Create speaker element
-    const speakerEl = document.createElement('div');
-    speakerEl.className = `speaker speaker-mount-${speaker.mountType}`;
-    speakerEl.id = 'speaker' + speaker.id;
-    speakerEl.onclick = (e) => {
-        e.stopPropagation();
-        selectSpeaker(speaker.id);
-    };
-    speakerEl.style.left = speaker.x + 'px';
-    speakerEl.style.top = speaker.y + 'px';
-    
-    // Create coverage element
-    const coverageEl = document.createElement('div');
-    coverageEl.className = 'speaker-coverage';
-    coverageEl.id = 'coverage' + speaker.id;
-    coverageEl.style.left = speaker.x + 'px';
-    coverageEl.style.top = speaker.y + 'px';
-    coverageEl.style.display = coverageVisible ? 'block' : 'none';
-    
-    // Add elements to the room editor
-    roomEditor.appendChild(speakerEl);
-    roomEditor.appendChild(coverageEl);
-}
-
-// Select a speaker when clicked
-function selectSpeaker(id) {
-    // Deselect previously selected speaker
-    if (selectedSpeakerId) {
-        const prevSpeaker = document.getElementById('speaker' + selectedSpeakerId);
-        if (prevSpeaker) {
-            prevSpeaker.classList.remove('selected');
-        }
-    }
-    
-    // Select new speaker
-    selectedSpeakerId = id;
-    const speakerEl = document.getElementById('speaker' + id);
-    if (speakerEl) {
-        speakerEl.classList.add('selected');
-    }
-    
-    // Update properties panel
-    updatePropertiesPanel(id);
-}
-
-// Update properties panel when a speaker is selected (with meters)
-function updatePropertiesPanel(speakerId) {
-    const speaker = placedSpeakers.find(s => s.id === speakerId);
-    if (!speaker) {
-        // Handle static speakers for demo
-        const speakerData = getSpeakerById(selectedDatabaseSpeakerId || 'jbl-srx835p');
-        document.getElementById('model-value').textContent = speakerData ? `${speakerData.manufacturer} ${speakerData.model}` : 'Demo Speaker';
-        
-        // For demo speakers, show approximate positions in meters
-        document.getElementById('x-position').value = '3.0 m';
-        document.getElementById('y-position').value = '1.2 m';
-        document.getElementById('rotation').value = '0°';
-        document.getElementById('tilt').value = '0°';
-        document.getElementById('power').value = '100W';
-        document.getElementById('mount-height').value = '1.2 m';
-        return;
-    }
-    
-    const speakerData = getSpeakerById(speaker.databaseId);
-    
-    // Convert pixel positions to meters
-    const xMeters = speaker.actualX || pixelsToMeters(speaker.x, true);
-    const yMeters = speaker.actualY || pixelsToMeters(speaker.y, false);
-    
-    // Update values in the properties panel
-    document.getElementById('model-value').textContent = `${speakerData.manufacturer} ${speakerData.model}`;
-    document.getElementById('x-position').value = parseFloat(xMeters).toFixed(1) + ' m';
-    document.getElementById('y-position').value = parseFloat(yMeters).toFixed(1) + ' m';
-    document.getElementById('rotation').value = speaker.rotation + '°';
-    document.getElementById('tilt').value = speaker.tilt + '°';
-    document.getElementById('power').value = speaker.power + 'W';
-    document.getElementById('mount-height').value = (speaker.mountHeight).toFixed(1) + ' m';
-    
-    // Update mount type dropdown
-    const mountTypeSelect = document.getElementById('mount-type');
-    mountTypeSelect.innerHTML = ''; // Clear existing options
-    
-    // Only show mount types that are valid for this speaker
-    speakerData.mountTypes.forEach(mountType => {
-        const mountTypeInfo = speakerDatabase.mountTypes.find(mt => mt.id === mountType);
-        if (mountTypeInfo) {
-            const option = document.createElement('option');
-            option.value = mountType;
-            option.textContent = mountTypeInfo.name;
-            option.selected = (speaker.mountType === mountType);
-            mountTypeSelect.appendChild(option);
-        }
-    });
-}
-
-// TOGGLE FUNCTIONS
-
-// Toggle coverage visualization
-function toggleCoverage() {
-    coverageVisible = !coverageVisible;
-    
-    // Update checkbox appearance
-    const checkbox = document.getElementById('coverage-checkbox');
-    checkbox.className = coverageVisible ? 'checkbox checked' : 'checkbox unchecked';
-    
-    // Show/hide coverage visualization
-    const overlay = document.getElementById('coverage-overlay');
-    overlay.style.display = coverageVisible ? 'block' : 'none';
-    
-    // Show/hide individual speaker coverage patterns
-    for (let i = 1; i <= 3; i++) {
-        const coverage = document.getElementById('coverage' + i);
-        if (coverage) {
-            coverage.style.display = coverageVisible ? 'block' : 'none';
-        }
-    }
-    
-    // Show/hide coverage for placed speakers
-    placedSpeakers.forEach(speaker => {
-        const coverage = document.getElementById('coverage' + speaker.id);
-        if (coverage) {
-            coverage.style.display = coverageVisible ? 'block' : 'none';
-        }
-    });
-}
-
-// Toggle SPL value visibility
-function toggleSplValues() {
-    splValuesVisible = !splValuesVisible;
-    
-    // Update checkbox appearance
-    const checkbox = document.getElementById('spl-checkbox');
-    checkbox.className = splValuesVisible ? 'checkbox checked' : 'checkbox unchecked';
-    
-    console.log(splValuesVisible ? 'SPL values visible' : 'SPL values hidden');
-}
-
-// PROPERTY UPDATE FUNCTIONS
-
-// Update speaker position (in meters)
-function updatePosition() {
-    if (selectedSpeakerId && placedSpeakers.find(s => s.id === selectedSpeakerId)) {
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            const xValue = parseFloat(document.getElementById('x-position').value);
-            const yValue = parseFloat(document.getElementById('y-position').value);
-            
-            // Update actual meter positions
-            placedSpeakers[speakerIndex].actualX = xValue;
-            placedSpeakers[speakerIndex].actualY = yValue;
-            
-            // Convert to pixel positions
-            const newPixelX = metersToPixels(xValue, true);
-            const newPixelY = metersToPixels(yValue, false);
-            
-            placedSpeakers[speakerIndex].x = newPixelX;
-            placedSpeakers[speakerIndex].y = newPixelY;
-            
-            // Update DOM elements
-            const speakerEl = document.getElementById('speaker' + selectedSpeakerId);
-            const coverageEl = document.getElementById('coverage' + selectedSpeakerId);
-            if (speakerEl) {
-                speakerEl.style.left = newPixelX + 'px';
-                speakerEl.style.top = newPixelY + 'px';
-            }
-            if (coverageEl) {
-                coverageEl.style.left = newPixelX + 'px';
-                coverageEl.style.top = newPixelY + 'px';
-            }
-        }
-    }
-}
-
-function updateRotation() {
-    if (selectedSpeakerId) {
-        const rotation = parseInt(document.getElementById('rotation').value);
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            placedSpeakers[speakerIndex].rotation = rotation;
-        }
-        console.log(`Speaker ${selectedSpeakerId} rotation updated to ${rotation}°`);
-    }
-}
-
-function updateTilt() {
-    if (selectedSpeakerId) {
-        const tilt = parseInt(document.getElementById('tilt').value);
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            placedSpeakers[speakerIndex].tilt = tilt;
-        }
-    }
-}
-
-function updateMountType() {
-    if (selectedSpeakerId) {
-        const mountType = document.getElementById('mount-type').value;
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            placedSpeakers[speakerIndex].mountType = mountType;
-            
-            // Update default height based on mount type
-            if (mountType === 'ceiling' || mountType === 'in-ceiling') {
-                placedSpeakers[speakerIndex].mountHeight = 3.0;
-                document.getElementById('mount-height').value = '3.0 m';
-                placedSpeakers[speakerIndex].tilt = 90;
-                document.getElementById('tilt').value = '90°';
-            } else if (mountType === 'wall' || mountType === 'in-wall') {
-                placedSpeakers[speakerIndex].mountHeight = 2.0;
-                document.getElementById('mount-height').value = '2.0 m';
-            } else {
-                placedSpeakers[speakerIndex].mountHeight = 1.2;
-                document.getElementById('mount-height').value = '1.2 m';
-                if (placedSpeakers[speakerIndex].tilt === 90) {
-                    placedSpeakers[speakerIndex].tilt = 0;
-                    document.getElementById('tilt').value = '0°';
-                }
-            }
-        }
-    }
-}
-
-function updateMountHeight() {
-    if (selectedSpeakerId) {
-        const mountHeight = parseFloat(document.getElementById('mount-height').value);
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            placedSpeakers[speakerIndex].mountHeight = mountHeight;
-        }
-    }
-}
-
-function updatePower() {
-    if (selectedSpeakerId) {
-        const power = parseInt(document.getElementById('power').value);
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            placedSpeakers[speakerIndex].power = power;
-        }
-    }
-}
-
-function updateTargetSpl() {
-    const targetSpl = parseInt(document.getElementById('target-spl').value);
-    console.log(`Target SPL updated to ${targetSpl} dB`);
-}
-
-function updateEarHeight() {
-    const earHeight = parseFloat(document.getElementById('ear-height').value);
-    console.log(`Ear height updated to ${earHeight} m`);
-}
-
-// SPEAKER MANAGEMENT FUNCTIONS
-
-// Delete selected speaker
-function deleteSelectedSpeaker() {
-    if (selectedSpeakerId) {
-        const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
-        if (speakerIndex !== -1) {
-            if (confirm(`Delete speaker ${selectedSpeakerId}?`)) {
-                // Remove from the DOM
-                const speakerEl = document.getElementById('speaker' + selectedSpeakerId);
-                const coverageEl = document.getElementById('coverage' + selectedSpeakerId);
-                
-                if (speakerEl) speakerEl.remove();
-                if (coverageEl) coverageEl.remove();
-                
-                // Remove from the array
-                placedSpeakers.splice(speakerIndex, 1);
-                
-                // Reset selection
-                selectedSpeakerId = null;
-                
-                // Update status bar
-                document.getElementById('speaker-count').textContent = `Speakers: ${placedSpeakers.length}`;
-                
-                // Update model value display
-                document.getElementById('model-value').textContent = 'Select a speaker';
-            }
-        } else {
-            alert('Cannot delete demo speakers. Please add your own speakers first.');
-        }
-    } else {
-        alert('No speaker selected');
-    }
-}
-
-// PREMIUM AND FILE FUNCTIONS
-
-// Show premium feature dialog
-function showPremiumDialog() {
-    document.getElementById('premium-overlay').style.display = 'flex';
-}
-
-// Close premium feature dialog
-function closePremiumDialog() {
-    document.getElementById('premium-overlay').style.display = 'none';
-}
-
-// Upgrade to premium
-function upgradeToPremium() {
-    alert('Thank you for upgrading! PDF Report feature is now available.');
-    closePremiumDialog();
-    generatePDFReport();
-}
-
-// Generate PDF report (placeholder)
-function generatePDFReport() {
-    const room = document.querySelector('.room');
-    const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
-    const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-    
-    let reportContent = `AuraVisual Speaker Layout Report\n\n`;
-    reportContent += `Room Dimensions: ${actualWidth}m × ${actualHeight}m\n`;
-    reportContent += `Number of Speakers: ${placedSpeakers.length}\n\n`;
-    
-    reportContent += `Speaker Details:\n`;
-    placedSpeakers.forEach((speaker, index) => {
-        const speakerData = getSpeakerById(speaker.databaseId);
-        reportContent += `${index + 1}. ${speakerData.manufacturer} ${speakerData.model}\n`;
-        reportContent += `   Position: ${speaker.actualX?.toFixed(1) || 'N/A'}m, ${speaker.actualY?.toFixed(1) || 'N/A'}m\n`;
-        reportContent += `   Mount: ${speaker.mountType} at ${speaker.mountHeight}m height\n`;
-        reportContent += `   Power: ${speaker.power}W, Rotation: ${speaker.rotation}°\n\n`;
-    });
-    
-    // Create downloadable text file (in real implementation, this would be a PDF)
-    const blob = new Blob([reportContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AuraVisual_Report_${actualWidth}x${actualHeight}m.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    console.log('PDF Report generated successfully!');
-}
-
-// Save layout to JSON file
-function saveLayout() {
-    const room = document.querySelector('.room');
-    const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
-    const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
-    
-    const layoutData = {
-        version: "1.0",
-        room: {
-            width: actualWidth,
-            height: actualHeight
-        },
-        speakers: placedSpeakers.map(speaker => ({
-            id: speaker.id,
-            databaseId: speaker.databaseId,
-            actualX: speaker.actualX,
-            actualY: speaker.actualY,
-            mountType: speaker.mountType,
-            mountHeight: speaker.mountHeight,
-            rotation: speaker.rotation,
-            tilt: speaker.tilt,
-            power: speaker.power
-        })),
-        settings: {
-            targetSpl: document.getElementById('target-spl').value,
-            earHeight: document.getElementById('ear-height').value,
-            coverageVisible: coverageVisible,
-            splValuesVisible: splValuesVisible
-        },
-        timestamp: new Date().toISOString()
-    };
-    
-    const dataStr = JSON.stringify(layoutData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `AuraVisual_Layout_${actualWidth}x${actualHeight}m_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    console.log('Layout saved successfully!');
-}
-
-// Load layout from JSON file
-function loadLayout() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const layoutData = JSON.parse(e.target.result);
-                    
-                    // Validate layout data
-                    if (!layoutData.version || !layoutData.room || !layoutData.speakers) {
-                        throw new Error('Invalid layout file format');
-                    }
-                    
-                    // Clear existing speakers
-                    placedSpeakers.forEach(speaker => {
-                        const speakerEl = document.getElementById('speaker' + speaker.id);
-                        const coverageEl = document.getElementById('coverage' + speaker.id);
-                        if (speakerEl) speakerEl.remove();
-                        if (coverageEl) coverageEl.remove();
-                    });
-                    placedSpeakers = [];
-                    
-                    // Load room dimensions
-                    document.getElementById('room-width').value = layoutData.room.width;
-                    document.getElementById('room-height').value = layoutData.room.height;
-                    updateRoomSize();
-                    
-                    // Load speakers
-                    let maxId = 0;
-                    layoutData.speakers.forEach(speakerData => {
-                        const speaker = {
-                            id: speakerData.id,
-                            databaseId: speakerData.databaseId,
-                            x: metersToPixels(speakerData.actualX, true),
-                            y: metersToPixels(speakerData.actualY, false),
-                            actualX: speakerData.actualX,
-                            actualY: speakerData.actualY,
-                            mountType: speakerData.mountType,
-                            mountHeight: speakerData.mountHeight,
-                            rotation: speakerData.rotation,
-                            tilt: speakerData.tilt,
-                            power: speakerData.power
-                        };
-                        
-                        placedSpeakers.push(speaker);
-                        createSpeakerElement(speaker);
-                        maxId = Math.max(maxId, speaker.id);
-                    });
-                    
-                    nextSpeakerId = maxId + 1;
-                    
-                    // Load settings
-                    if (layoutData.settings) {
-                        document.getElementById('target-spl').value = layoutData.settings.targetSpl || '85 dB';
-                        document.getElementById('ear-height').value = layoutData.settings.earHeight || '1.2 m';
-                        
-                        if (layoutData.settings.coverageVisible !== undefined) {
-                            coverageVisible = layoutData.settings.coverageVisible;
-                            const checkbox = document.getElementById('coverage-checkbox');
-                            checkbox.className = coverageVisible ? 'checkbox checked' : 'checkbox unchecked';
-                            toggleCoverage();
-                        }
-                    }
-                    
-                    // Update speaker count
-                    document.getElementById('speaker-count').textContent = `Speakers: ${placedSpeakers.length}`;
-                    
-                    alert(`Layout loaded successfully!\nRoom: ${layoutData.room.width}m × ${layoutData.room.height}m\nSpeakers: ${layoutData.speakers.length}`);
-                    
-                } catch (error) {
-                    alert('Error loading layout file: ' + error.message);
-                    console.error('Error loading layout:', error);
-                }
-            };
-            reader.readAsText(file);
-        }
-    };
-    input.click();
-    
-// Variables for drag functionality
-let isDragging = false;
-let dragSpeakerId = null;
-let dragOffset = { x: 0, y: 0 };
-
-// Enhanced select tool function with drag functionality
+// Enhanced tool selection with drag support
 function selectTool(tool) {
     currentTool = tool;
     
@@ -1484,35 +694,32 @@ function selectTool(tool) {
     document.getElementById('speaker-tool').classList.toggle('active', tool === 'speaker');
     document.getElementById('move-tool').classList.toggle('active', tool === 'move');
     
-    // Update cursor on room editor
+    // Update cursor and functionality
     const roomEditor = document.getElementById('room-editor');
-    roomEditor.style.cursor = tool === 'speaker' ? 'crosshair' : 'default';
-    
-    // Enable/disable dragging based on tool
-    if (tool === 'move') {
-        enableSpeakerDragging();
-    } else {
+    if (tool === 'speaker') {
+        roomEditor.style.cursor = 'crosshair';
+        roomEditor.title = 'Click to place speakers';
         disableSpeakerDragging();
+    } else if (tool === 'move') {
+        roomEditor.style.cursor = 'default';
+        roomEditor.title = 'Drag speakers to move them';
+        enableSpeakerDragging();
     }
+    
+    console.log(`Tool switched to: ${tool}`);
 }
 
-// Enable speaker dragging functionality
+// Enable drag functionality for all speakers
 function enableSpeakerDragging() {
-    // Add drag event listeners to all existing speakers
     const allSpeakers = document.querySelectorAll('.speaker');
     allSpeakers.forEach(speaker => {
         speaker.style.cursor = 'grab';
         speaker.addEventListener('mousedown', handleSpeakerMouseDown);
     });
-    
-    // Add global mouse event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
 }
 
-// Disable speaker dragging functionality
+// Disable drag functionality
 function disableSpeakerDragging() {
-    // Remove drag event listeners from all speakers
     const allSpeakers = document.querySelectorAll('.speaker');
     allSpeakers.forEach(speaker => {
         speaker.style.cursor = 'pointer';
@@ -1531,14 +738,14 @@ function handleSpeakerMouseDown(event) {
     event.preventDefault();
     event.stopPropagation();
     
-    // Get speaker ID from element
+    // Get speaker ID
     const speakerId = event.target.id.replace('speaker', '');
     dragSpeakerId = parseInt(speakerId);
     
     // Select the speaker being dragged
     selectSpeaker(dragSpeakerId);
     
-    // Calculate offset from mouse to speaker center
+    // Calculate drag offset
     const speakerRect = event.target.getBoundingClientRect();
     dragOffset.x = event.clientX - speakerRect.left - speakerRect.width / 2;
     dragOffset.y = event.clientY - speakerRect.top - speakerRect.height / 2;
@@ -1551,7 +758,7 @@ function handleSpeakerMouseDown(event) {
     console.log(`Started dragging speaker ${dragSpeakerId}`);
 }
 
-// Handle mouse move (during drag)
+// Handle mouse move during drag
 function handleMouseMove(event) {
     if (!isDragging || !dragSpeakerId || currentTool !== 'move') return;
     
@@ -1566,14 +773,10 @@ function handleMouseMove(event) {
     if (!room) return;
     
     const roomRect = room.getBoundingClientRect();
-    const roomLeft = roomRect.left;
-    const roomTop = roomRect.top;
-    const roomRight = roomRect.right;
-    const roomBottom = roomRect.bottom;
     
-    // Constrain to room boundaries (with some padding for speaker size)
-    const constrainedX = Math.max(roomLeft + 10, Math.min(roomRight - 30, newX));
-    const constrainedY = Math.max(roomTop + 10, Math.min(roomBottom - 30, newY));
+    // Constrain to room boundaries
+    const constrainedX = Math.max(roomRect.left + 10, Math.min(roomRect.right - 30, newX));
+    const constrainedY = Math.max(roomRect.top + 10, Math.min(roomRect.bottom - 30, newY));
     
     // Update speaker position
     const speakerEl = document.getElementById('speaker' + dragSpeakerId);
@@ -1589,18 +792,19 @@ function handleMouseMove(event) {
         coverageEl.style.top = constrainedY + 'px';
     }
     
-    // Update speaker data in memory
+    // Update speaker data
     const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
     if (speakerIndex !== -1) {
         placedSpeakers[speakerIndex].x = constrainedX;
         placedSpeakers[speakerIndex].y = constrainedY;
         
-        // Convert to meters for storage
-        placedSpeakers[speakerIndex].actualX = parseFloat(pixelsToMeters(constrainedX, true));
-        placedSpeakers[speakerIndex].actualY = parseFloat(pixelsToMeters(constrainedY, false));
+        // Convert to meters and update actual positions
+        updateSpeakerActualPosition(speakerIndex, constrainedX, constrainedY);
         
         // Update properties panel in real-time
-        updatePropertiesPanel(dragSpeakerId);
+        if (selectedSpeakerId === dragSpeakerId) {
+            updatePropertiesPanel(dragSpeakerId);
+        }
     }
 }
 
@@ -1608,7 +812,6 @@ function handleMouseMove(event) {
 function handleMouseUp(event) {
     if (!isDragging || !dragSpeakerId) return;
     
-    // End dragging
     isDragging = false;
     
     const speakerEl = document.getElementById('speaker' + dragSpeakerId);
@@ -1618,20 +821,98 @@ function handleMouseUp(event) {
     }
     
     console.log(`Finished dragging speaker ${dragSpeakerId}`);
-    
-    // Get final position in meters
-    const speakerIndex = placedSpeakers.findIndex(s => s.id === dragSpeakerId);
-    if (speakerIndex !== -1) {
-        const finalX = placedSpeakers[speakerIndex].actualX;
-        const finalY = placedSpeakers[speakerIndex].actualY;
-        console.log(`Speaker ${dragSpeakerId} moved to: ${finalX}m, ${finalY}m`);
-    }
-    
     dragSpeakerId = null;
 }
 
-// Enhanced createSpeakerElement function that supports dragging
-function createSpeakerElementWithDrag(speaker) {
+// Update speaker's actual position in meters based on pixel position
+function updateSpeakerActualPosition(speakerIndex, pixelX, pixelY) {
+    const room = document.querySelector('.room');
+    if (!room || speakerIndex < 0 || speakerIndex >= placedSpeakers.length) return;
+    
+    const roomLeft = parseFloat(room.style.left) || 100;
+    const roomTop = parseFloat(room.style.top) || 80;
+    const roomWidth = parseFloat(room.style.width) || 400;
+    const roomHeight = parseFloat(room.style.height) || 280;
+    
+    if (currentView === 'top') {
+        // Top view: convert to length and width coordinates
+        const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+        const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
+        
+        const xPercent = (pixelX - roomLeft) / roomWidth;
+        const yPercent = (pixelY - roomTop) / roomHeight;
+        
+        placedSpeakers[speakerIndex].actualX = Math.max(0, Math.min(actualLength, xPercent * actualLength));
+        placedSpeakers[speakerIndex].actualY = Math.max(0, Math.min(actualWidth, yPercent * actualWidth));
+        
+    } else {
+        // Side view: convert to length and mount height
+        const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+        const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
+        
+        const xPercent = (pixelX - roomLeft) / roomWidth;
+        const heightRatio = 1 - (pixelY - roomTop) / roomHeight; // Inverted
+        
+        placedSpeakers[speakerIndex].actualX = Math.max(0, Math.min(actualLength, xPercent * actualLength));
+        placedSpeakers[speakerIndex].mountHeight = Math.max(0.1, Math.min(actualHeight, heightRatio * actualHeight));
+    }
+}
+
+// === SPEAKER MANAGEMENT FUNCTIONS ===
+
+// Add a new speaker to the room
+function addSpeakerToRoom(clientX, clientY) {
+    if (!selectedDatabaseSpeakerId) {
+        alert('Please select a speaker model first');
+        return;
+    }
+    
+    const room = document.querySelector('.room');
+    if (!room) return;
+    
+    const roomRect = room.getBoundingClientRect();
+    
+    // Check if click is within room bounds
+    if (clientX < roomRect.left || clientX > roomRect.right || clientY < roomRect.top || clientY > roomRect.bottom) {
+        return;
+    }
+    
+    const speakerData = getSpeakerById(selectedDatabaseSpeakerId);
+    const defaultMountType = speakerData.mountTypes[0];
+    
+    // Convert click position to room-relative coordinates
+    const x = clientX - roomRect.left + parseFloat(room.style.left);
+    const y = clientY - roomRect.top + parseFloat(room.style.top);
+    
+    // Create new speaker object with 3D positioning
+    const newSpeaker = {
+        id: nextSpeakerId++,
+        databaseId: selectedDatabaseSpeakerId,
+        x: x,
+        y: y,
+        actualX: 0, // Will be calculated
+        actualY: 0, // Will be calculated
+        mountType: defaultMountType,
+        mountHeight: defaultMountType.includes('ceiling') ? 3.0 : 1.2,
+        rotation: 0,
+        tilt: defaultMountType.includes('ceiling') ? 90 : 0,
+        power: Math.round(speakerData.power / 10)
+    };
+    
+    // Calculate actual meter positions
+    updateSpeakerActualPosition(placedSpeakers.length, x, y);
+    
+    placedSpeakers.push(newSpeaker);
+    createSpeakerElement(newSpeaker);
+    selectSpeaker(newSpeaker.id);
+    
+    updateStatusBar();
+    
+    console.log(`Added speaker: ${speakerData.manufacturer} ${speakerData.model} at ${newSpeaker.actualX?.toFixed(1)}m, ${newSpeaker.actualY?.toFixed(1)}m`);
+}
+
+// Create speaker element in DOM
+function createSpeakerElement(speaker) {
     const roomEditor = document.getElementById('room-editor');
     
     // Create speaker element
@@ -1661,54 +942,375 @@ function createSpeakerElementWithDrag(speaker) {
     coverageEl.style.top = speaker.y + 'px';
     coverageEl.style.display = coverageVisible ? 'block' : 'none';
     
-    // Add elements to the room editor
     roomEditor.appendChild(speakerEl);
     roomEditor.appendChild(coverageEl);
 }
 
-// Update the existing createSpeakerElement function
-function createSpeakerElement(speaker) {
-    createSpeakerElementWithDrag(speaker);
+// Select a speaker in the room
+function selectSpeaker(id) {
+    // Deselect previous speaker
+    if (selectedSpeakerId) {
+        const prevSpeaker = document.getElementById('speaker' + selectedSpeakerId);
+        if (prevSpeaker) {
+            prevSpeaker.classList.remove('selected');
+        }
+    }
+    
+    // Select new speaker
+    selectedSpeakerId = id;
+    const speakerEl = document.getElementById('speaker' + id);
+    if (speakerEl) {
+        speakerEl.classList.add('selected');
+    }
+    
+    // Update properties panel
+    updatePropertiesPanel(id);
+    
+    console.log(`Selected speaker: ${id}`);
 }
 
-// Add dragging support to existing demo speakers
-function addDragToExistingSpeakers() {
-    const demoSpeakers = ['speaker1', 'speaker2', 'speaker3'];
-    demoSpeakers.forEach(speakerId => {
-        const speakerEl = document.getElementById(speakerId);
-        if (speakerEl && currentTool === 'move') {
-            speakerEl.style.cursor = 'grab';
-            speakerEl.addEventListener('mousedown', function(event) {
-                // Create a temporary speaker object for demo speakers
-                const tempId = parseInt(speakerId.replace('speaker', ''));
-                dragSpeakerId = tempId;
-                handleSpeakerMouseDown(event);
-            });
+// Update properties panel with speaker information
+function updatePropertiesPanel(speakerId) {
+    const speaker = placedSpeakers.find(s => s.id === speakerId);
+    
+    if (!speaker) {
+        // Handle demo speakers
+        const speakerData = getSpeakerById(selectedDatabaseSpeakerId || 'jbl-srx835p');
+        document.getElementById('model-value').textContent = speakerData ? 
+            `${speakerData.manufacturer} ${speakerData.model}` : 'Demo Speaker';
+        
+        document.getElementById('x-position').value = '4.0 m';
+        document.getElementById('y-position').value = '2.5 m';
+        document.getElementById('mount-height').value = '1.2 m';
+        document.getElementById('rotation').value = '0°';
+        document.getElementById('tilt').value = '0°';
+        document.getElementById('power').value = '100W';
+        return;
+    }
+    
+    const speakerData = getSpeakerById(speaker.databaseId);
+    
+    // Update properties with 3D coordinates
+    document.getElementById('model-value').textContent = `${speakerData.manufacturer} ${speakerData.model}`;
+    document.getElementById('x-position').value = (speaker.actualX || 4.0).toFixed(1) + ' m';
+    document.getElementById('y-position').value = (speaker.actualY || 2.5).toFixed(1) + ' m';
+    document.getElementById('mount-height').value = (speaker.mountHeight || 1.2).toFixed(1) + ' m';
+    document.getElementById('rotation').value = speaker.rotation + '°';
+    document.getElementById('tilt').value = speaker.tilt + '°';
+    document.getElementById('power').value = speaker.power + 'W';
+    
+    // Update mount type dropdown
+    const mountTypeSelect = document.getElementById('mount-type');
+    mountTypeSelect.innerHTML = '';
+    
+    speakerData.mountTypes.forEach(mountType => {
+        const mountTypeInfo = speakerDatabase.mountTypes.find(mt => mt.id === mountType);
+        if (mountTypeInfo) {
+            const option = document.createElement('option');
+            option.value = mountType;
+            option.textContent = mountTypeInfo.name;
+            option.selected = (speaker.mountType === mountType);
+            mountTypeSelect.appendChild(option);
         }
     });
 }
 
-// Enhanced tool selection with visual feedback
-function selectToolEnhanced(tool) {
-    currentTool = tool;
-    
-    // Update tool button styling
-    document.getElementById('speaker-tool').classList.toggle('active', tool === 'speaker');
-    document.getElementById('move-tool').classList.toggle('active', tool === 'move');
-    
-    // Update cursor and instructions
-    const roomEditor = document.getElementById('room-editor');
-    if (tool === 'speaker') {
-        roomEditor.style.cursor = 'crosshair';
-        roomEditor.title = 'Click to place speakers';
-        disableSpeakerDragging();
-    } else if (tool === 'move') {
-        roomEditor.style.cursor = 'default';
-        roomEditor.title = 'Drag speakers to move them';
-        enableSpeakerDragging();
-        addDragToExistingSpeakers();
+// Delete selected speaker
+function deleteSelectedSpeaker() {
+    if (!selectedSpeakerId) {
+        alert('No speaker selected');
+        return;
     }
     
-    console.log(`Tool switched to: ${tool}`);
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    if (speakerIndex !== -1) {
+        if (confirm(`Delete selected speaker?`)) {
+            // Remove from DOM
+            const speakerEl = document.getElementById('speaker' + selectedSpeakerId);
+            const coverageEl = document.getElementById('coverage' + selectedSpeakerId);
+            
+            if (speakerEl) speakerEl.remove();
+            if (coverageEl) coverageEl.remove();
+            
+            // Remove from array
+            placedSpeakers.splice(speakerIndex, 1);
+            
+            // Reset selection
+            selectedSpeakerId = null;
+            document.getElementById('model-value').textContent = 'Select a speaker';
+            
+            updateStatusBar();
+            console.log('Speaker deleted');
+        }
+    } else {
+        alert('Cannot delete demo speakers. Please add your own speakers first.');
+    }
 }
+
+// === PROPERTY UPDATE FUNCTIONS ===
+
+function updatePosition() {
+    if (!selectedSpeakerId || !placedSpeakers.find(s => s.id === selectedSpeakerId)) return;
+    
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    if (speakerIndex === -1) return;
+    
+    const xValue = parseFloat(document.getElementById('x-position').value);
+    const yValue = parseFloat(document.getElementById('y-position').value);
+    
+    // Update actual positions
+    placedSpeakers[speakerIndex].actualX = xValue;
+    placedSpeakers[speakerIndex].actualY = yValue;
+    
+    // Convert to pixel positions and update display
+    const room = document.querySelector('.room');
+    if (room) {
+        const roomLeft = parseFloat(room.style.left) || 100;
+        const roomTop = parseFloat(room.style.top) || 80;
+        const roomWidth = parseFloat(room.style.width) || 400;
+        const roomHeight = parseFloat(room.style.height) || 280;
+        
+        let newPixelX, newPixelY;
+        
+        if (currentView === 'top') {
+            const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+            const actualWidth = parseFloat(room.getAttribute('data-actual-width')) || 5;
+            
+            newPixelX = roomLeft + (xValue / actualLength * roomWidth);
+            newPixelY = roomTop + (yValue / actualWidth * roomHeight);
+        } else {
+            const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+            const actualHeight = parseFloat(room.getAttribute('data-actual-height')) || 3.5;
+            
+            newPixelX = roomLeft + (xValue / actualLength * roomWidth);
+            newPixelY = roomTop + ((actualHeight - placedSpeakers[speakerIndex].mountHeight) / actualHeight * roomHeight);
+        }
+        
+        // Update DOM elements
+        const speakerEl = document.getElementById('speaker' + selectedSpeakerId);
+        const coverageEl = document.getElementById('coverage' + selectedSpeakerId);
+        
+        if (speakerEl) {
+            speakerEl.style.left = newPixelX + 'px';
+            speakerEl.style.top = newPixelY + 'px';
+            placedSpeakers[speakerIndex].x = newPixelX;
+            placedSpeakers[speakerIndex].y = newPixelY;
+        }
+        
+        if (coverageEl) {
+            coverageEl.style.left = newPixelX + 'px';
+            coverageEl.style.top = newPixelY + 'px';
+        }
+    }
+}
+
+function updateMountHeight() {
+    if (!selectedSpeakerId) return;
+    
+    const mountHeight = parseFloat(document.getElementById('mount-height').value);
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].mountHeight = mountHeight;
+        
+        // If in side view, update Y position based on new mount height
+        if (currentView === 'side') {
+            repositionSpeakersForView();
+        }
+        
+        console.log(`Mount height updated to ${mountHeight}m`);
+    }
+}
+
+function updateRotation() {
+    if (!selectedSpeakerId) return;
+    
+    const rotation = parseInt(document.getElementById('rotation').value);
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].rotation = rotation;
+    }
+}
+
+function updateTilt() {
+    if (!selectedSpeakerId) return;
+    
+    const tilt = parseInt(document.getElementById('tilt').value);
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].tilt = tilt;
+    }
+}
+
+function updateMountType() {
+    if (!selectedSpeakerId) return;
+    
+    const mountType = document.getElementById('mount-type').value;
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].mountType = mountType;
+        
+        // Update default values based on mount type
+        if (mountType.includes('ceiling')) {
+            placedSpeakers[speakerIndex].mountHeight = 3.0;
+            document.getElementById('mount-height').value = '3.0 m';
+            placedSpeakers[speakerIndex].tilt = 90;
+            document.getElementById('tilt').value = '90°';
+        } else if (mountType.includes('wall')) {
+            placedSpeakers[speakerIndex].mountHeight = 2.0;
+            document.getElementById('mount-height').value = '2.0 m';
+        } else {
+            placedSpeakers[speakerIndex].mountHeight = 1.2;
+            document.getElementById('mount-height').value = '1.2 m';
+            if (placedSpeakers[speakerIndex].tilt === 90) {
+                placedSpeakers[speakerIndex].tilt = 0;
+                document.getElementById('tilt').value = '0°';
+            }
+        }
+        
+        // Update speaker styling
+        const speakerEl = document.getElementById('speaker' + selectedSpeakerId);
+        if (speakerEl) {
+            speakerEl.className = `speaker speaker-mount-${mountType} selected`;
+        }
+        
+        // Reposition if in side view
+        if (currentView === 'side') {
+            repositionSpeakersForView();
+        }
+    }
+}
+
+function updatePower() {
+    if (!selectedSpeakerId) return;
+    
+    const power = parseInt(document.getElementById('power').value);
+    const speakerIndex = placedSpeakers.findIndex(s => s.id === selectedSpeakerId);
+    
+    if (speakerIndex !== -1) {
+        placedSpeakers[speakerIndex].power = power;
+    }
+}
+
+function updateTargetSpl() {
+    const targetSpl = parseInt(document.getElementById('target-spl').value);
+    console.log(`Target SPL updated to ${targetSpl} dB`);
+}
+
+function updateEarHeight() {
+    const earHeight = parseFloat(document.getElementById('ear-height').value);
+    console.log(`Audience height updated to ${earHeight} m`);
+}
+
+// === TOGGLE FUNCTIONS ===
+
+function toggleCoverage() {
+    coverageVisible = !coverageVisible;
+    
+    // Update checkbox
+    const checkbox = document.getElementById('coverage-checkbox');
+    checkbox.className = coverageVisible ? 'checkbox checked' : 'checkbox unchecked';
+    
+    // Toggle visibility
+    const overlay = document.getElementById('coverage-overlay');
+    if (overlay) overlay.style.display = coverageVisible ? 'block' : 'none';
+    
+    // Toggle speaker coverage patterns
+    for (let i = 1; i <= 3; i++) {
+        const coverage = document.getElementById('coverage' + i);
+        if (coverage) coverage.style.display = coverageVisible ? 'block' : 'none';
+    }
+    
+    placedSpeakers.forEach(speaker => {
+        const coverage = document.getElementById('coverage' + speaker.id);
+        if (coverage) coverage.style.display = coverageVisible ? 'block' : 'none';
+    });
+    
+    console.log(`Coverage visualization: ${coverageVisible ? 'ON' : 'OFF'}`);
+}
+
+function toggleSplValues() {
+    splValuesVisible = !splValuesVisible;
+    
+    const checkbox = document.getElementById('spl-checkbox');
+    checkbox.className = splValuesVisible ? 'checkbox checked' : 'checkbox unchecked';
+    
+    console.log(`SPL values: ${splValuesVisible ? 'ON' : 'OFF'}`);
+}
+
+// === STATUS BAR AND UI UPDATES ===
+
+function updateStatusBar() {
+    const room = document.querySelector('.room');
+    const length = parseFloat(room?.getAttribute('data-actual-length')) || 8;
+    const width = parseFloat(room?.getAttribute('data-actual-width')) || 5;
+    const height = parseFloat(room?.getAttribute('data-actual-height')) || 3.5;
+    
+    // Update status items
+    const statusItems = document.querySelectorAll('.status-item');
+    if (statusItems.length >= 4) {
+        statusItems[0].textContent = `Room: ${length}m × ${width}m × ${height}m`;
+        statusItems[1].textContent = `Speakers: ${placedSpeakers.length + 3}`; // +3 for demo speakers
+        statusItems[2].textContent = `Average SPL: ${(85 + Math.random() * 5).toFixed(1)} dB`;
+        statusItems[3].textContent = `View: ${currentView === 'top' ? 'Top' : 'Side'}`;
+    }
+}
+
+// === FILE OPERATIONS ===
+
+function saveLayout() {
+    const room = document.querySelector('.room');
+    const length = parseFloat(room?.getAttribute('data-actual-length')) || 8;
+    const width = parseFloat(room?.getAttribute('data-actual-width')) || 5;
+    const height = parseFloat(room?.getAttribute('data-actual-height')) || 3.5;
+    
+    const layoutData = {
+        version: "2.0",
+        room: { 
+            length: length,
+            width: width,
+            height: height 
+        },
+        speakers: placedSpeakers.map(speaker => ({
+            id: speaker.id,
+            databaseId: speaker.databaseId,
+            actualX: speaker.actualX,
+            actualY: speaker.actualY,
+            mountType: speaker.mountType,
+            mountHeight: speaker.mountHeight,
+            rotation: speaker.rotation,
+            tilt: speaker.tilt,
+            power: speaker.power
+        })),
+        settings: {
+            targetSpl: document.getElementById('target-spl').value,
+            audienceHeight: document.getElementById('ear-height').value,
+            coverageVisible: coverageVisible,
+            splValuesVisible: splValuesVisible,
+            currentView: currentView
+        },
+        metadata: {
+            appVersion: "AuraVisual Professional v2.0",
+            totalSpeakers: placedSpeakers.length,
+            totalPower: placedSpeakers.reduce((sum, speaker) => sum + (speaker.power || 0), 0),
+            roomVolume: (length * width * height).toFixed(1),
+            timestamp: new Date().toISOString(),
+            exportedBy: "AuraVisual Professional AV Layout App"
+        }
+    };
+    
+    const dataStr = JSON.stringify(layoutData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `AuraVisual_Layout_${length}x${width}x${height}m_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    console.log(`Layout saved: ${layoutData.metadata.totalSpeakers} speakers, ${layoutData.metadata.totalPower}W total power`);
+    alert(`Layout saved successfully!\nRoom: ${length}m × ${width}m × ${height}m\nSpeakers: ${layoutData.metadata.totalSpeakers}\nTotal Power: ${layoutData.metadata.totalPower}W`);
 }
