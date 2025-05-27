@@ -645,8 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Add SPL energy (logarithmic addition)
                         totalSPL += Math.pow(10, spl / 10);
-                    }
-                });
+           
                 
                 // Convert back to dB
                 const combinedSPL = totalSPL > 0 ? 10 * Math.log10(totalSPL) : 0;
