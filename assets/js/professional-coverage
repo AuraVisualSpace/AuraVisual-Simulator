@@ -1,0 +1,429 @@
+// PHASE 1: Real Speaker Coverage Patterns with Elliptical Dispersion
+// Replace circular coverage with professional dispersion calculations
+
+// Enhanced speaker database with real dispersion data
+const enhancedSpeakerDatabase = {
+    "speakers": [
+        {
+            "id": "jbl-srx835p",
+            "manufacturer": "JBL",
+            "model": "SRX835P",
+            "type": "point-source",
+            "power": 2000,
+            "maxSPL": 134,
+            "sensitivity": 99,
+            "horizontalCoverage": 90,    // 90° horizontal dispersion
+            "verticalCoverage": 50,     // 50° vertical dispersion
+            "mountTypes": ["stand", "flying", "wall"],
+            "frequencyRange": "50Hz-20kHz",
+            "weight": 32
+        },
+        {
+            "id": "qsc-k12-2",
+            "manufacturer": "QSC",
+            "model": "K12.2",
+            "type": "point-source",
+            "power": 2000,
+            "maxSPL": 132,
+            "sensitivity": 98,
+            "horizontalCoverage": 75,    // 75° horizontal dispersion
+            "verticalCoverage": 75,     // 75° vertical dispersion (wide pattern)
+            "mountTypes": ["stand", "wall"],
+            "frequencyRange": "52Hz-20kHz",
+            "weight": 16
+        },
+        {
+            "id": "ev-zlx-15p",
+            "manufacturer": "EV",
+            "model": "ZLX-15P",
+            "type": "point-source",
+            "power": 1000,
+            "maxSPL": 126,
+            "sensitivity": 94,
+            "horizontalCoverage": 90,    // 90° horizontal dispersion
+            "verticalCoverage": 60,     // 60° vertical dispersion
+            "mountTypes": ["stand", "wall"],
+            "frequencyRange": "55Hz-20kHz",
+            "weight": 20
+        },
+        {
+            "id": "yamaha-dxr15",
+            "manufacturer": "Yamaha",
+            "model": "DXR15",
+            "type": "point-source",
+            "power": 1100,
+            "maxSPL": 135,
+            "sensitivity": 99,
+            "horizontalCoverage": 90,    // 90° horizontal dispersion
+            "verticalCoverage": 60,     // 60° vertical dispersion
+            "mountTypes": ["stand", "flying", "wall"],
+            "frequencyRange": "52Hz-20kHz",
+            "weight": 18
+        },
+        {
+            "id": "bose-f1-812",
+            "manufacturer": "Bose",
+            "model": "F1 Model 812",
+            "type": "line-array",
+            "power": 1000,
+            "maxSPL": 130,
+            "sensitivity": 96,
+            "horizontalCoverage": 100,   // Wide horizontal for line array
+            "verticalCoverage": 30,     // Narrow vertical for line array
+            "mountTypes": ["stand", "flying"],
+            "frequencyRange": "37Hz-20kHz",
+            "weight": 24
+        },
+        {
+            "id": "martin-cdd12",
+            "manufacturer": "Martin Audio",
+            "model": "CDD12",
+            "type": "point-source",
+            "power": 700,
+            "maxSPL": 128,
+            "sensitivity": 97,
+            "horizontalCoverage": 80,    // 80° horizontal dispersion
+            "verticalCoverage": 50,     // 50° vertical dispersion
+            "mountTypes": ["stand", "wall", "ceiling"],
+            "frequencyRange": "65Hz-20kHz",
+            "weight": 14
+        }
+    ]
+};
+
+// Professional coverage calculation functions
+class ProfessionalCoverageEngine {
+    
+    // Calculate real elliptical coverage dimensions
+    static calculateCoverageAtDistance(speaker, distance) {
+        const speakerData = getSpeakerById(speaker.databaseId);
+        if (!speakerData) return { width: 4, height: 4 }; // Fallback
+        
+        // Convert coverage angles to radians and get half-angles
+        const hHalfAngle = (speakerData.horizontalCoverage / 2) * (Math.PI / 180);
+        const vHalfAngle = (speakerData.verticalCoverage / 2) * (Math.PI / 180);
+        
+        // Calculate coverage dimensions using trigonometry
+        // Width = 2 * distance * tan(horizontal_half_angle)
+        const coverageWidth = 2 * distance * Math.tan(hHalfAngle);
+        const coverageHeight = 2 * distance * Math.tan(vHalfAngle);
+        
+        return {
+            width: Math.max(0.5, coverageWidth),    // Minimum 0.5m coverage
+            height: Math.max(0.5, coverageHeight),  // Minimum 0.5m coverage
+            horizontalAngle: speakerData.horizontalCoverage,
+            verticalAngle: speakerData.verticalCoverage
+        };
+    }
+    
+    // Calculate SPL at a specific point with distance and angle factors
+    static calculateSPLAtPoint(speaker, pointX, pointY, pointZ = 1.2) {
+        const speakerData = getSpeakerById(speaker.databaseId);
+        if (!speakerData) return 85; // Fallback SPL
+        
+        // Calculate 3D distance
+        const deltaX = pointX - (speaker.actualX || 4);
+        const deltaY = pointY - (speaker.actualY || 2.5);  
+        const deltaZ = pointZ - (speaker.mountHeight || 1.2);
+        
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+        if (distance < 0.1) distance = 0.1; // Avoid division by zero
+        
+        // Inverse square law: SPL drops 6dB per doubling of distance
+        let splAtDistance = speakerData.maxSPL - (20 * Math.log10(distance));
+        
+        // Calculate horizontal and vertical angles from speaker axis
+        const horizontalAngle = Math.abs(Math.atan2(deltaY, deltaX) * (180 / Math.PI));
+        const verticalAngle = Math.abs(Math.atan2(deltaZ, Math.sqrt(deltaX * deltaX + deltaY * deltaY)) * (180 / Math.PI));
+        
+        // Apply angle penalties (professional -6dB standard)
+        const hPenalty = this.calculateAnglePenalty(horizontalAngle, speakerData.horizontalCoverage / 2);
+        const vPenalty = this.calculateAnglePenalty(verticalAngle, speakerData.verticalCoverage / 2);
+        
+        // Apply rotation offset if speaker is rotated
+        const rotationOffset = speaker.rotation || 0;
+        const adjustedHorizontalAngle = horizontalAngle - rotationOffset;
+        const rotationPenalty = this.calculateAnglePenalty(Math.abs(adjustedHorizontalAngle), speakerData.horizontalCoverage / 2);
+        
+        return Math.max(40, splAtDistance - hPenalty - vPenalty - rotationPenalty); // Minimum 40dB
+    }
+    
+    // Calculate SPL penalty based on off-axis angle
+    static calculateAnglePenalty(angle, coverageHalfAngle) {
+        if (angle <= coverageHalfAngle) {
+            // Within coverage: linear dropoff from 0dB to -6dB
+            return (angle / coverageHalfAngle) * 6;
+        } else {
+            // Outside coverage: additional steep dropoff
+            const excessAngle = angle - coverageHalfAngle;
+            return 6 + (excessAngle * 0.5); // -6dB plus 0.5dB per degree outside
+        }
+    }
+    
+    // Create professional coverage visualization elements
+    static createCoverageVisualization(speaker) {
+        const room = document.querySelector('.room');
+        if (!room) return;
+        
+        // Remove old coverage if exists
+        const oldCoverage = document.getElementById('coverage' + speaker.id);
+        if (oldCoverage) oldCoverage.remove();
+        
+        // Create enhanced coverage container
+        const coverageContainer = document.createElement('div');
+        coverageContainer.id = 'coverage' + speaker.id;
+        coverageContainer.className = 'professional-coverage';
+        coverageContainer.style.position = 'absolute';
+        coverageContainer.style.pointerEvents = 'none';
+        coverageContainer.style.zIndex = '1';
+        
+        // Calculate coverage for multiple distances (creates depth effect)
+        const distances = [2, 4, 6, 8]; // Different coverage rings
+        const opacities = [0.3, 0.25, 0.2, 0.15]; // Fade with distance
+        
+        distances.forEach((distance, index) => {
+            const coverage = this.calculateCoverageAtDistance(speaker, distance);
+            const ellipse = this.createCoverageEllipse(speaker, coverage, distance, opacities[index]);
+            coverageContainer.appendChild(ellipse);
+        });
+        
+        // Add SPL contour lines
+        const contourLines = this.createSPLContourLines(speaker);
+        contourLines.forEach(line => coverageContainer.appendChild(line));
+        
+        // Add coverage info display
+        const infoDisplay = this.createCoverageInfo(speaker);
+        coverageContainer.appendChild(infoDisplay);
+        
+        // Position and add to room
+        this.positionCoverageElement(coverageContainer, speaker);
+        room.appendChild(coverageContainer);
+    }
+    
+    // Create individual coverage ellipse
+    static createCoverageEllipse(speaker, coverage, distance, opacity) {
+        const ellipse = document.createElement('div');
+        ellipse.className = 'coverage-ellipse';
+        
+        // Convert coverage dimensions to pixels for display
+        const pixelWidth = this.metersToPixels(coverage.width);
+        const pixelHeight = this.metersToPixels(coverage.height);
+        
+        // Style the ellipse
+        ellipse.style.position = 'absolute';
+        ellipse.style.width = pixelWidth + 'px';
+        ellipse.style.height = pixelHeight + 'px';
+        ellipse.style.border = '2px solid rgba(0, 150, 255, ' + (opacity + 0.2) + ')';
+        ellipse.style.backgroundColor = 'rgba(0, 150, 255, ' + opacity + ')';
+        ellipse.style.borderRadius = '50%';
+        ellipse.style.left = -(pixelWidth / 2) + 'px';
+        ellipse.style.top = -(pixelHeight / 2) + 'px';
+        ellipse.style.transform = `rotate(${speaker.rotation || 0}deg)`;
+        
+        // Add distance label
+        const label = document.createElement('div');
+        label.textContent = distance + 'm';
+        label.style.position = 'absolute';
+        label.style.top = '2px';
+        label.style.left = '2px';
+        label.style.fontSize = '10px';
+        label.style.color = 'rgba(255, 255, 255, 0.8)';
+        label.style.fontWeight = 'bold';
+        ellipse.appendChild(label);
+        
+        return ellipse;
+    }
+    
+    // Create SPL contour lines for -3dB and -6dB boundaries
+    static createSPLContourLines(speaker) {
+        const lines = [];
+        const speakerData = getSpeakerById(speaker.databaseId);
+        if (!speakerData) return lines;
+        
+        // Create -3dB boundary (professional standard)
+        const contour3dB = this.createContourLine(speaker, 3, 'rgba(255, 255, 0, 0.6)', '3dB');
+        lines.push(contour3dB);
+        
+        // Create -6dB boundary (coverage edge)
+        const contour6dB = this.createContourLine(speaker, 6, 'rgba(255, 150, 0, 0.8)', '6dB');
+        lines.push(contour6dB);
+        
+        return lines;
+    }
+    
+    // Create individual contour line
+    static createContourLine(speaker, splDrop, color, label) {
+        const line = document.createElement('div');
+        line.className = 'spl-contour-line';
+        
+        // Calculate contour size based on SPL drop
+        const baseDistance = 4; // 4 meter reference
+        const contourCoverage = this.calculateCoverageAtDistance(speaker, baseDistance);
+        
+        // Adjust size based on SPL drop (smaller for higher drops)
+        const sizeFactor = 1 - (splDrop / 20); // Scale factor
+        const pixelWidth = this.metersToPixels(contourCoverage.width * sizeFactor);
+        const pixelHeight = this.metersToPixels(contourCoverage.height * sizeFactor);
+        
+        line.style.position = 'absolute';
+        line.style.width = pixelWidth + 'px';
+        line.style.height = pixelHeight + 'px';
+        line.style.border = '2px dashed ' + color;
+        line.style.backgroundColor = 'transparent';
+        line.style.borderRadius = '50%';
+        line.style.left = -(pixelWidth / 2) + 'px';
+        line.style.top = -(pixelHeight / 2) + 'px';
+        line.style.transform = `rotate(${speaker.rotation || 0}deg)`;
+        
+        // Add SPL label
+        const splLabel = document.createElement('div');
+        splLabel.textContent = '-' + label;
+        splLabel.style.position = 'absolute';
+        splLabel.style.bottom = '2px';
+        splLabel.style.right = '2px';
+        splLabel.style.fontSize = '9px';
+        splLabel.style.color = color;
+        splLabel.style.fontWeight = 'bold';
+        splLabel.style.textShadow = '1px 1px 1px rgba(0,0,0,0.5)';
+        line.appendChild(splLabel);
+        
+        return line;
+    }
+    
+    // Create coverage information display
+    static createCoverageInfo(speaker) {
+        const info = document.createElement('div');
+        info.className = 'coverage-info';
+        
+        const speakerData = getSpeakerById(speaker.databaseId);
+        if (!speakerData) return info;
+        
+        info.innerHTML = `
+            <div style="position: absolute; top: -25px; left: 0; 
+                        background: rgba(0,0,0,0.8); color: white; 
+                        padding: 2px 6px; border-radius: 3px; 
+                        font-size: 10px; white-space: nowrap;">
+                ${speakerData.horizontalCoverage}° × ${speakerData.verticalCoverage}°
+                <br>${speakerData.maxSPL}dB @ 1m
+            </div>
+        `;
+        
+        return info;
+    }
+    
+    // Position coverage element relative to speaker
+    static positionCoverageElement(element, speaker) {
+        element.style.left = (speaker.x || 200) + 'px';
+        element.style.top = (speaker.y || 150) + 'px';
+        element.style.display = coverageVisible ? 'block' : 'none';
+    }
+    
+    // Convert meters to pixels for display (utility function)
+    static metersToPixels(meters) {
+        const room = document.querySelector('.room');
+        if (!room) return meters * 40; // Fallback scale
+        
+        const roomWidth = parseFloat(room.style.width) || 400;
+        const actualLength = parseFloat(room.getAttribute('data-actual-length')) || 8;
+        
+        const pixelsPerMeter = roomWidth / actualLength;
+        return meters * pixelsPerMeter;
+    }
+}
+
+// Enhanced coverage toggle function
+function toggleProfessionalCoverage() {
+    coverageVisible = !coverageVisible;
+    
+    // Update checkbox appearance
+    const checkbox = document.getElementById('coverage-checkbox');
+    checkbox.className = coverageVisible ? 'checkbox checked' : 'checkbox unchecked';
+    
+    // Toggle all professional coverage displays
+    document.querySelectorAll('.professional-coverage').forEach(coverage => {
+        coverage.style.display = coverageVisible ? 'block' : 'none';
+    });
+    
+    // Update demo speakers coverage (compatibility)
+    for (let i = 1; i <= 3; i++) {
+        const coverage = document.getElementById('coverage' + i);
+        if (coverage) coverage.style.display = coverageVisible ? 'block' : 'none';
+    }
+    
+    console.log(`Professional coverage visualization: ${coverageVisible ? 'ON' : 'OFF'}`);
+}
+
+// Enhanced speaker creation with professional coverage
+function createProfessionalSpeakerElement(speaker) {
+    // Create the speaker element (existing function)
+    createSpeakerElement(speaker);
+    
+    // Add professional coverage visualization
+    setTimeout(() => {
+        ProfessionalCoverageEngine.createCoverageVisualization(speaker);
+    }, 100);
+}
+
+// Update existing functions to use professional coverage
+function updateCoverageForAllSpeakers() {
+    // Update all placed speakers with professional coverage
+    placedSpeakers.forEach(speaker => {
+        ProfessionalCoverageEngine.createCoverageVisualization(speaker);
+    });
+    
+    console.log('All speakers updated with professional coverage patterns');
+}
+
+// Enhanced room size update to recalculate coverage
+function updateRoomSizeWithCoverage() {
+    // Call existing updateRoomSize function
+    updateRoomSize();
+    
+    // Recalculate all coverage patterns for new room scale
+    setTimeout(() => {
+        updateCoverageForAllSpeakers();
+    }, 200);
+}
+
+// Initialize professional coverage system
+function initializeProfessionalCoverage() {
+    console.log('🎯 Professional Coverage Engine v1.0 - Initialized');
+    console.log('Features: Elliptical Dispersion, SPL Contours, Real Coverage Calculations');
+    
+    // Replace speaker database with enhanced version
+    if (typeof speakerDatabase !== 'undefined') {
+        speakerDatabase.speakers = enhancedSpeakerDatabase.speakers;
+        console.log('✅ Speaker database upgraded with dispersion data');
+    }
+    
+    // Update existing coverage toggle
+    window.toggleCoverage = toggleProfessionalCoverage;
+    
+    // Update room resize function
+    const originalUpdateRoomSize = window.updateRoomSize;
+    window.updateRoomSize = function() {
+        originalUpdateRoomSize();
+        setTimeout(() => updateCoverageForAllSpeakers(), 200);
+    };
+    
+    console.log('✅ Professional coverage system ready!');
+}
+
+// Auto-initialize when script loads
+if (typeof window !== 'undefined') {
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeProfessionalCoverage);
+    } else {
+        initializeProfessionalCoverage();
+    }
+}
+
+// Export for use in main application
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { ProfessionalCoverageEngine, initializeProfessionalCoverage };
+}
+
+console.log('🚀 Phase 1: Professional Speaker Coverage Patterns - LOADED!');
+console.log('📊 Features: Real elliptical dispersion, SPL calculations, contour lines');
+console.log('🎯 Ready to replace circular coverage with profession
