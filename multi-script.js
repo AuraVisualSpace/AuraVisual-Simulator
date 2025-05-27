@@ -877,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.font = 'bold 14px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(`S${index + 1}`, canvasX, canvasY - 15);
-        });
+   
         
         // Draw room dimensions
         ctx.fillStyle = '#ffffff';
