@@ -657,8 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data[pixelIndex + 1] = color.g; // Green
                 data[pixelIndex + 2] = color.b; // Blue
                 data[pixelIndex + 3] = 180;     // Alpha (transparency)
-            }
-        }
+
         
         // Draw the SPL heatmap
         const tempCanvas = document.createElement('canvas');
