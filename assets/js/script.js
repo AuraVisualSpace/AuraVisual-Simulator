@@ -1,13 +1,24 @@
 class SPLSimulator {
     constructor() {
+        console.log('SPLSimulator constructor started');
         this.mainCanvas = document.getElementById('mainView');
         this.mainCtx = this.mainCanvas.getContext('2d');
         
+        console.log('Canvas element:', this.mainCanvas);
+        console.log('Canvas context:', this.mainCtx);
+        
+        if (!this.mainCanvas || !this.mainCtx) {
+            console.error('Canvas or context not found!');
+            return;
+        }
+        
         this.setupEventListeners();
         this.updateSimulation();
+        console.log('SPLSimulator constructor completed');
     }
     
     setupEventListeners() {
+        console.log('Setting up event listeners');
         const controls = [
             'roomWidth', 'roomHeight', 'roomDepth', 'maxSPL', 'speakerWall', 
             'speakerX', 'speakerY', 'speakerZ', 'horizontalRotation', 
@@ -16,6 +27,11 @@ class SPLSimulator {
         
         controls.forEach(control => {
             const element = document.getElementById(control);
+            if (!element) {
+                console.error(`Element not found: ${control}`);
+                return;
+            }
+            
             element.addEventListener('change', () => {
                 this.updateDisplayValues();
                 this.updateSimulation();
@@ -27,18 +43,29 @@ class SPLSimulator {
         });
         
         this.updateDisplayValues();
+        console.log('Event listeners setup complete');
     }
     
     updateDisplayValues() {
-        document.getElementById('speakerXValue').textContent = document.getElementById('speakerX').value + '%';
-        document.getElementById('speakerYValue').textContent = document.getElementById('speakerY').value + '%';
-        document.getElementById('speakerZValue').textContent = document.getElementById('speakerZ').value + '%';
-        document.getElementById('horizontalRotationValue').textContent = document.getElementById('horizontalRotation').value + '°';
-        document.getElementById('verticalTiltValue').textContent = document.getElementById('verticalTilt').value + '°';
+        const elements = [
+            { id: 'speakerXValue', source: 'speakerX', suffix: '%' },
+            { id: 'speakerYValue', source: 'speakerY', suffix: '%' },
+            { id: 'speakerZValue', source: 'speakerZ', suffix: '%' },
+            { id: 'horizontalRotationValue', source: 'horizontalRotation', suffix: '°' },
+            { id: 'verticalTiltValue', source: 'verticalTilt', suffix: '°' }
+        ];
+        
+        elements.forEach(el => {
+            const sourceEl = document.getElementById(el.source);
+            const targetEl = document.getElementById(el.id);
+            if (sourceEl && targetEl) {
+                targetEl.textContent = sourceEl.value + el.suffix;
+            }
+        });
     }
     
     getParameters() {
-        return {
+        const params = {
             roomWidth: parseFloat(document.getElementById('roomWidth').value),
             roomHeight: parseFloat(document.getElementById('roomHeight').value),
             roomDepth: parseFloat(document.getElementById('roomDepth').value),
@@ -51,43 +78,54 @@ class SPLSimulator {
             verticalTilt: parseFloat(document.getElementById('verticalTilt').value),
             viewMode: document.getElementById('viewMode').value
         };
+        
+        console.log('Parameters:', params);
+        return params;
     }
     
     getSpeakerPosition(params) {
         const { roomWidth, roomHeight, roomDepth, speakerWall, speakerX, speakerY, speakerZ } = params;
         
+        let position;
         switch (speakerWall) {
             case 'front':
-                return { 
+                position = { 
                     x: speakerX * roomWidth, 
                     y: 0, 
                     z: speakerZ * roomHeight 
                 };
+                break;
             case 'back':
-                return { 
+                position = { 
                     x: speakerX * roomWidth, 
                     y: roomDepth, 
                     z: speakerZ * roomHeight 
                 };
+                break;
             case 'left':
-                return { 
+                position = { 
                     x: 0, 
                     y: speakerY * roomDepth, 
                     z: speakerZ * roomHeight 
                 };
+                break;
             case 'right':
-                return { 
+                position = { 
                     x: roomWidth, 
                     y: speakerY * roomDepth, 
                     z: speakerZ * roomHeight 
                 };
+                break;
             default:
-                return { 
+                position = { 
                     x: roomWidth/2, 
                     y: 0, 
                     z: speakerZ * roomHeight 
                 };
         }
+        
+        console.log('Speaker position:', position);
+        return position;
     }
     
     getSpeakerDirection(params) {
@@ -124,11 +162,14 @@ class SPLSimulator {
         // Apply vertical tilt
         const horizontalMagnitude = Math.sqrt(rotatedDir.x * rotatedDir.x + rotatedDir.y * rotatedDir.y);
         
-        return {
+        const direction = {
             x: rotatedDir.x * Math.cos(vertTiltRad),
             y: rotatedDir.y * Math.cos(vertTiltRad),
             z: horizontalMagnitude * Math.sin(vertTiltRad)
         };
+        
+        console.log('Speaker direction:', direction);
+        return direction;
     }
     
     calculateSPL(distance, horizontalAngle, verticalAngle, maxSPL) {
@@ -162,11 +203,17 @@ class SPLSimulator {
     }
     
     drawTopView(params, listeningHeight) {
+        console.log('Drawing top view with listening height:', listeningHeight);
         const ctx = this.mainCtx;
         const canvas = this.mainCanvas;
         const { roomWidth, roomDepth, maxSPL } = params;
         
+        // Clear canvas first
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Test draw - simple rectangle to verify canvas is working
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         const scaleX = canvas.width / roomWidth;
         const scaleY = canvas.height / roomDepth;
@@ -174,6 +221,9 @@ class SPLSimulator {
         
         const offsetX = (canvas.width - roomWidth * scale) / 2;
         const offsetY = (canvas.height - roomDepth * scale) / 2;
+        
+        console.log('Canvas dimensions:', canvas.width, canvas.height);
+        console.log('Scale:', scale, 'Offsets:', offsetX, offsetY);
         
         // Draw room outline
         ctx.strokeStyle = '#ffffff';
@@ -185,7 +235,9 @@ class SPLSimulator {
         const direction = this.getSpeakerDirection(params);
         
         // Draw SPL heatmap
-        const resolution = 30;
+        const resolution = 20; // Reduced for debugging
+        console.log('Starting heatmap drawing...');
+        
         for (let i = 0; i < resolution; i++) {
             for (let j = 0; j < resolution; j++) {
                 const x = (i / (resolution - 1)) * roomWidth;
@@ -193,11 +245,11 @@ class SPLSimulator {
                 
                 const dx = x - speaker.x;
                 const dy = y - speaker.y;
-                const dz = listeningHeight - speaker.z; // Use specified listening height
+                const dz = listeningHeight - speaker.z;
                 const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                 
                 if (distance > 0) {
-                    // Calculate horizontal angle (in XY plane)
+                    // Calculate horizontal angle
                     const pointDirection = { x: dx / distance, y: dy / distance };
                     const horizDotProduct = direction.x * pointDirection.x + direction.y * pointDirection.y;
                     const horizontalAngle = Math.acos(Math.max(-1, Math.min(1, horizDotProduct))) * 180 / Math.PI;
@@ -220,23 +272,26 @@ class SPLSimulator {
         }
         
         ctx.globalAlpha = 1;
+        console.log('Heatmap drawing completed');
         
         // Draw dispersion pattern
         ctx.strokeStyle = '#ffff00';
         ctx.lineWidth = 2;
-        ctx.beginPath();
         
         const speakerPixelX = offsetX + speaker.x * scale;
         const speakerPixelY = offsetY + speaker.y * scale;
         
-        // Project 3D direction to 2D for display
+        console.log('Speaker pixel position:', speakerPixelX, speakerPixelY);
+        
+        // Project 3D direction to 2D
         const directionAngle = Math.atan2(direction.y, direction.x);
         
         // Draw 90-degree horizontal dispersion cone
         const coneLength = 120;
-        const leftAngle = directionAngle - Math.PI / 4; // -45°
-        const rightAngle = directionAngle + Math.PI / 4; // +45°
+        const leftAngle = directionAngle - Math.PI / 4;
+        const rightAngle = directionAngle + Math.PI / 4;
         
+        ctx.beginPath();
         ctx.moveTo(speakerPixelX, speakerPixelY);
         ctx.lineTo(
             speakerPixelX + Math.cos(leftAngle) * coneLength,
@@ -250,6 +305,161 @@ class SPLSimulator {
         );
         
         // Draw center axis
+        ctx.strokeStyle = '#ff8800';
+        ctx.lineWidth = 1;
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(directionAngle) * coneLength,
+            speakerPixelY + Math.sin(directionAngle) * coneLength
+        );
+        
+        ctx.stroke();
+        
+        // Draw speaker
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(speakerPixelX, speakerPixelY, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Draw speaker orientation indicator
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(directionAngle) * 20,
+            speakerPixelY + Math.sin(directionAngle) * 20
+        );
+        ctx.stroke();
+        
+        // Add listening height indicator
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px Arial';
+        ctx.fillText(`Listening Height: ${listeningHeight}m`, 20, 30);
+        
+        console.log('Top view drawing completed');
+    }
+    
+    drawSideView(params) {
+        console.log('Drawing side view');
+        const ctx = this.mainCtx;
+        const canvas = this.mainCanvas;
+        const { roomDepth, roomHeight, maxSPL } = params;
+        
+        // Clear canvas first
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Test background
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const scaleX = canvas.width / roomDepth;
+        const scaleY = canvas.height / roomHeight;
+        const scale = Math.min(scaleX, scaleY) * 0.8;
+        
+        const offsetX = (canvas.width - roomDepth * scale) / 2;
+        const offsetY = (canvas.height - roomHeight * scale) / 2;
+        
+        // Draw room outline
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(offsetX, offsetY, roomDepth * scale, roomHeight * scale);
+        
+        // Get speaker position and direction
+        const speaker = this.getSpeakerPosition(params);
+        const direction = this.getSpeakerDirection(params);
+        
+        // Draw listening height indicators first
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        // 1.2m line
+        if (roomHeight >= 1.2) {
+            const height12Y = offsetY + (roomHeight - 1.2) * scale;
+            ctx.beginPath();
+            ctx.moveTo(offsetX, height12Y);
+            ctx.lineTo(offsetX + roomDepth * scale, height12Y);
+            ctx.stroke();
+        }
+        
+        // 1.7m line
+        if (roomHeight >= 1.7) {
+            const height17Y = offsetY + (roomHeight - 1.7) * scale;
+            ctx.beginPath();
+            ctx.moveTo(offsetX, height17Y);
+            ctx.lineTo(offsetX + roomDepth * scale, height17Y);
+            ctx.stroke();
+        }
+        
+        ctx.setLineDash([]);
+        
+        // Draw speaker
+        const speakerPixelX = offsetX + speaker.y * scale;
+        const speakerPixelY = offsetY + (roomHeight - speaker.z) * scale;
+        
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(speakerPixelX, speakerPixelY, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Labels for listening heights
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '14px Arial';
+        if (roomHeight >= 1.7) {
+            const height17Y = offsetY + (roomHeight - 1.7) * scale;
+            ctx.fillText('1.7m', offsetX + roomDepth * scale + 10, height17Y + 5);
+        }
+        if (roomHeight >= 1.2) {
+            const height12Y = offsetY + (roomHeight - 1.2) * scale;
+            ctx.fillText('1.2m', offsetX + roomDepth * scale + 10, height12Y + 5);
+        }
+        
+        console.log('Side view drawing completed');
+    }
+    
+    updateSimulation() {
+        console.log('Updating simulation...');
+        const params = this.getParameters();
+        const viewTitle = document.getElementById('viewTitle');
+        
+        if (!viewTitle) {
+            console.error('View title element not found');
+            return;
+        }
+        
+        console.log('View mode:', params.viewMode);
+        
+        try {
+            if (params.viewMode === 'top_1.2') {
+                viewTitle.textContent = 'Top View (1.2m Listening Height)';
+                this.drawTopView(params, 1.2);
+            } else if (params.viewMode === 'top_1.7') {
+                viewTitle.textContent = 'Top View (1.7m Listening Height)';
+                this.drawTopView(params, 1.7);
+            } else if (params.viewMode === 'side') {
+                viewTitle.textContent = 'Side View (45° Vertical Dispersion)';
+                this.drawSideView(params);
+            } else {
+                console.log('Using default view mode');
+                viewTitle.textContent = 'Top View (1.2m Listening Height)';
+                this.drawTopView(params, 1.2);
+            }
+        } catch (error) {
+            console.error('Error in updateSimulation:', error);
+        }
+    }
+}
+
+// Initialize the simulator when the page loads
+window.addEventListener('load', () => {
+    console.log('Page loaded, initializing SPLSimulator...');
+    try {
+        new SPLSimulator();
+    } catch (error) {
+        console.error('Error initializing SPLSimulator:', error);
+    }
+}); center axis
         ctx.strokeStyle = '#ff8800';
         ctx.lineWidth = 1;
         ctx.moveTo(speakerPixelX, speakerPixelY);
