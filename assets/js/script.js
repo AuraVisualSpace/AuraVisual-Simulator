@@ -179,11 +179,11 @@ class SPLSimulator {
         const distanceAttenuation = 20 * Math.log10(distance);
         
         // Horizontal angular attenuation (90° dispersion)
-        const normalizedHorizAngle = Math.abs(horizontalAngle) / 45; // 90° total = ±45°
+        const normalizedHorizAngle = Math.abs(horizontalAngle) / 45;
         const horizAngularAttenuation = normalizedHorizAngle > 1 ? -20 : -6 * Math.pow(normalizedHorizAngle, 2);
         
         // Vertical angular attenuation (45° dispersion)
-        const normalizedVertAngle = Math.abs(verticalAngle) / 22.5; // 45° total = ±22.5°
+        const normalizedVertAngle = Math.abs(verticalAngle) / 22.5;
         const vertAngularAttenuation = normalizedVertAngle > 1 ? -20 : -6 * Math.pow(normalizedVertAngle, 2);
         
         // Combined attenuation
@@ -235,7 +235,7 @@ class SPLSimulator {
         const direction = this.getSpeakerDirection(params);
         
         // Draw SPL heatmap
-        const resolution = 20; // Reduced for debugging
+        const resolution = 20;
         console.log('Starting heatmap drawing...');
         
         for (let i = 0; i < resolution; i++) {
@@ -369,12 +369,48 @@ class SPLSimulator {
         const speaker = this.getSpeakerPosition(params);
         const direction = this.getSpeakerDirection(params);
         
-        // Draw listening height indicators first
+        // Draw SPL heatmap for side view (simplified for debugging)
+        const resolution = 15;
+        for (let i = 0; i < resolution; i++) {
+            for (let j = 0; j < resolution; j++) {
+                const y = (i / (resolution - 1)) * roomDepth;
+                const z = (j / (resolution - 1)) * roomHeight;
+                
+                const dx = 0;
+                const dy = y - speaker.y;
+                const dz = z - speaker.z;
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                
+                if (distance > 0.1) {
+                    const horizontalDistance = Math.sqrt(dx * dx + dy * dy);
+                    let horizontalAngle = 0;
+                    if (horizontalDistance > 0.01) {
+                        horizontalAngle = Math.atan2(Math.abs(dx), Math.abs(dy)) * 180 / Math.PI;
+                    }
+                    
+                    const verticalAngle = Math.atan2(dz, Math.max(horizontalDistance, 0.01)) * 180 / Math.PI;
+                    
+                    const spl = this.calculateSPL(distance, horizontalAngle, verticalAngle, maxSPL);
+                    const color = this.getSPLColor(spl);
+                    
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fillRect(
+                        offsetX + y * scale - 3,
+                        offsetY + (roomHeight - z) * scale - 3,
+                        6, 6
+                    );
+                }
+            }
+        }
+        
+        ctx.globalAlpha = 1;
+        
+        // Draw listening height indicators
         ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         
-        // 1.2m line
         if (roomHeight >= 1.2) {
             const height12Y = offsetY + (roomHeight - 1.2) * scale;
             ctx.beginPath();
@@ -383,7 +419,6 @@ class SPLSimulator {
             ctx.stroke();
         }
         
-        // 1.7m line
         if (roomHeight >= 1.7) {
             const height17Y = offsetY + (roomHeight - 1.7) * scale;
             ctx.beginPath();
@@ -394,14 +429,60 @@ class SPLSimulator {
         
         ctx.setLineDash([]);
         
-        // Draw speaker
+        // Draw vertical dispersion pattern
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 2;
+        
         const speakerPixelX = offsetX + speaker.y * scale;
         const speakerPixelY = offsetY + (roomHeight - speaker.z) * scale;
         
+        const horizontalMag = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+        const verticalDirection = Math.atan2(direction.z, Math.max(horizontalMag, 0.01));
+        
+        const coneLength = 100;
+        const topAngle = verticalDirection + Math.PI / 8;
+        const bottomAngle = verticalDirection - Math.PI / 8;
+        
+        ctx.beginPath();
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(topAngle) * coneLength,
+            speakerPixelY - Math.sin(topAngle) * coneLength
+        );
+        
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(bottomAngle) * coneLength,
+            speakerPixelY - Math.sin(bottomAngle) * coneLength
+        );
+        
+        // Draw center axis
+        ctx.strokeStyle = '#ff8800';
+        ctx.lineWidth = 1;
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(verticalDirection) * coneLength,
+            speakerPixelY - Math.sin(verticalDirection) * coneLength
+        );
+        
+        ctx.stroke();
+        
+        // Draw speaker
         ctx.fillStyle = '#ff0000';
         ctx.beginPath();
         ctx.arc(speakerPixelX, speakerPixelY, 10, 0, 2 * Math.PI);
         ctx.fill();
+        
+        // Draw speaker orientation indicator
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(speakerPixelX, speakerPixelY);
+        ctx.lineTo(
+            speakerPixelX + Math.cos(verticalDirection) * 20,
+            speakerPixelY - Math.sin(verticalDirection) * 20
+        );
+        ctx.stroke();
         
         // Labels for listening heights
         ctx.fillStyle = '#00ff00';
@@ -459,4 +540,4 @@ window.addEventListener('load', () => {
     } catch (error) {
         console.error('Error initializing SPLSimulator:', error);
     }
-}); 
+});
