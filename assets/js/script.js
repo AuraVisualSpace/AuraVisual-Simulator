@@ -204,14 +204,43 @@ class SPLSimulator {
     }
     
     getSPLColorRGB(spl) {
-        // More sophisticated color mapping with smooth gradients
-        if (spl >= 110) return { r: 255, g: 0, b: 0 };    // Bright red
-        if (spl >= 100) return { r: 255, g: Math.round((110-spl)*25.5), b: 0 }; // Red to orange
-        if (spl >= 90) return { r: 255, g: 255, b: Math.round((100-spl)*25.5) }; // Orange to yellow
-        if (spl >= 80) return { r: Math.round(255-(90-spl)*17.5), g: 255, b: 0 }; // Yellow to green
-        if (spl >= 70) return { r: 0, g: 255, b: Math.round((80-spl)*25.5) }; // Green to cyan
-        if (spl >= 60) return { r: 0, g: Math.round(255-(70-spl)*25.5), b: 255 }; // Cyan to blue
-        return { r: 0, g: 0, b: Math.max(100, 255-(60-spl)*15.5) }; // Dark blue
+        // Smooth gradient color mapping with proper interpolation
+        spl = Math.max(0, Math.min(120, spl)); // Clamp SPL values
+        
+        // Define color stops with SPL values
+        const colorStops = [
+            { spl: 120, r: 255, g: 0, b: 0 },     // Bright red
+            { spl: 110, r: 255, g: 50, b: 0 },    // Red-orange
+            { spl: 100, r: 255, g: 150, b: 0 },   // Orange
+            { spl: 90, r: 255, g: 255, b: 0 },    // Yellow
+            { spl: 80, r: 150, g: 255, b: 0 },    // Yellow-green
+            { spl: 70, r: 0, g: 255, b: 100 },    // Green
+            { spl: 60, r: 0, g: 200, b: 255 },    // Cyan
+            { spl: 50, r: 0, g: 100, b: 255 },    // Blue
+            { spl: 40, r: 50, g: 50, b: 255 },    // Deep blue
+            { spl: 0, r: 0, g: 0, b: 150 }        // Dark blue
+        ];
+        
+        // Find the two color stops to interpolate between
+        for (let i = 0; i < colorStops.length - 1; i++) {
+            const upper = colorStops[i];
+            const lower = colorStops[i + 1];
+            
+            if (spl >= lower.spl) {
+                // Interpolate between upper and lower
+                const range = upper.spl - lower.spl;
+                const factor = range > 0 ? (spl - lower.spl) / range : 0;
+                
+                return {
+                    r: Math.round(lower.r + (upper.r - lower.r) * factor),
+                    g: Math.round(lower.g + (upper.g - lower.g) * factor),
+                    b: Math.round(lower.b + (upper.b - lower.b) * factor)
+                };
+            }
+        }
+        
+        // Fallback to darkest color
+        return { r: 0, g: 0, b: 150 };
     }
     
     drawTopView(params, listeningHeight) {
@@ -245,7 +274,6 @@ class SPLSimulator {
         const direction = this.getSpeakerDirection(params);
         
         // Create smooth SPL heatmap using ImageData for better performance
-        const resolution = 60; // Higher resolution for smoother look
         const imageData = ctx.createImageData(canvas.width, canvas.height);
         const data = imageData.data;
         
@@ -274,8 +302,12 @@ class SPLSimulator {
                         const spl = this.calculateSPL(distance, horizontalAngle, verticalAngle, maxSPL);
                         const color = this.getSPLColorRGB(spl);
                         
-                        // Apply smooth gradient effect
-                        const alpha = Math.max(0.3, Math.min(0.8, spl / maxSPL));
+                        // Apply smooth gradient effect with better alpha blending
+                        const alpha = Math.max(0.4, Math.min(0.9, (spl - 30) / (maxSPL - 30)));
+                        
+                        // Add subtle noise for more natural appearance
+                        const noise = (Math.random() - 0.5) * 0.1;
+                        const finalAlpha = Math.max(0.2, Math.min(1.0, alpha + noise));
                         
                         // Fill 2x2 pixel area for smoother appearance
                         for (let px = 0; px < 2 && canvasX + px < canvas.width; px++) {
@@ -285,7 +317,7 @@ class SPLSimulator {
                                     data[index] = color.r;     // Red
                                     data[index + 1] = color.g; // Green
                                     data[index + 2] = color.b; // Blue
-                                    data[index + 3] = alpha * 255; // Alpha
+                                    data[index + 3] = finalAlpha * 255; // Alpha
                                 }
                             }
                         }
@@ -470,7 +502,10 @@ class SPLSimulator {
                         const spl = this.calculateSPL(distance, horizontalAngle, verticalAngle, maxSPL);
                         const color = this.getSPLColorRGB(spl);
                         
-                        const alpha = Math.max(0.3, Math.min(0.8, spl / maxSPL));
+                        // Better alpha calculation for side view
+                        const alpha = Math.max(0.4, Math.min(0.9, (spl - 30) / (maxSPL - 30)));
+                        const noise = (Math.random() - 0.5) * 0.08;
+                        const finalAlpha = Math.max(0.2, Math.min(1.0, alpha + noise));
                         
                         // Fill 2x2 pixel area
                         for (let px = 0; px < 2 && canvasX + px < canvas.width; px++) {
@@ -480,7 +515,7 @@ class SPLSimulator {
                                     data[index] = color.r;
                                     data[index + 1] = color.g;
                                     data[index + 2] = color.b;
-                                    data[index + 3] = alpha * 255;
+                                    data[index + 3] = finalAlpha * 255;
                                 }
                             }
                         }
@@ -609,44 +644,44 @@ class SPLSimulator {
             ctx.fillText('🧍 1.7m (Standing)', offsetX + roomDepth * scale + 15, height17Y + 5);
         }
         if (roomHeight >= 1.2) {
-            const height12Y = offsetY + (roomHeight - 1.2) * scale;
-            ctx.fillText('🪑 1.2m (Seated)', offsetX + roomDepth * scale + 15, height12Y + 5);
-        }
-        
-        // Add room dimensions and speaker info
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = 'bold 16px Arial';
-        ctx.fillText('📐 Side View Analysis', 20, 35);
-        
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.font = '12px Arial';
-        ctx.fillText(`Room: ${roomDepth}m × ${roomHeight}m`, 20, canvas.height - 40);
-        ctx.fillText(`Speaker Height: ${(speaker.z).toFixed(1)}m`, 20, canvas.height - 20);
-        
-        console.log('Enhanced side view drawing completed');
-    }
-    
-    updateSimulation() {
-        console.log('Updating simulation...');
-        const params = this.getParameters();
-        const viewTitle = document.getElementById('viewTitle');
-        
-        if (!viewTitle) {
-            console.error('View title element not found');
-            return;
-        }
-        
-        console.log('View mode:', params.viewMode);
-        
-        try {
-            if (params.viewMode === 'top_1.2') {
-                viewTitle.textContent = 'Top View (1.2m Listening Height)';
-                this.drawTopView(params, 1.2);
-            } else if (params.viewMode === 'top_1.7') {
-                viewTitle.textContent = 'Top View (1.7m Listening Height)';
-                this.drawTopView(params, 1.7);
-            } else if (params.viewMode === 'side') {
-                    viewTitle.textContent = 'Side View (45° Vertical Dispersion)';
+            const height12Y = offsetY + (roomHeight - 1.2) * scale
+             ctx.fillText('🪑 1.2m (Seated)', offsetX + roomDepth * scale + 15, height12Y + 5);
+       }
+       
+       // Add room dimensions and speaker info
+       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+       ctx.font = 'bold 16px Arial';
+       ctx.fillText('📐 Side View Analysis', 20, 35);
+       
+       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+       ctx.font = '12px Arial';
+       ctx.fillText(`Room: ${roomDepth}m × ${roomHeight}m`, 20, canvas.height - 40);
+       ctx.fillText(`Speaker Height: ${(speaker.z).toFixed(1)}m`, 20, canvas.height - 20);
+       
+       console.log('Enhanced side view drawing completed');
+   }
+   
+   updateSimulation() {
+       console.log('Updating simulation...');
+       const params = this.getParameters();
+       const viewTitle = document.getElementById('viewTitle');
+       
+       if (!viewTitle) {
+           console.error('View title element not found');
+           return;
+       }
+       
+       console.log('View mode:', params.viewMode);
+       
+       try {
+           if (params.viewMode === 'top_1.2') {
+               viewTitle.textContent = 'Top View (1.2m Listening Height)';
+               this.drawTopView(params, 1.2);
+           } else if (params.viewMode === 'top_1.7') {
+               viewTitle.textContent = 'Top View (1.7m Listening Height)';
+               this.drawTopView(params, 1.7);
+           } else if (params.viewMode === 'side') {
+               viewTitle.textContent = 'Side View (45° Vertical Dispersion)';
                this.drawSideView(params);
            } else {
                console.log('Using default view mode');
