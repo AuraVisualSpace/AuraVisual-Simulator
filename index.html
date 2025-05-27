@@ -3,241 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraVisual - Professional AV Speaker Layout App</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <title>Speaker SPL Room Simulator</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>AuraVisual - Professional AV Speaker Layout App</h1>
-            <div class="header-buttons">
-                <button class="header-button" onclick="saveLayout()">Save Layout</button>
-                <button class="header-button" onclick="loadLayout()">Load Layout</button>
-            </div>
-        </div>
+        <h1>🔊 Speaker SPL Room Simulator</h1>
         
-        <!-- Main Content -->
-        <div class="main">
-            <!-- Left Panel - Speaker Selection -->
-            <div class="left-panel">
-                <div class="panel-header">Professional Speaker Library</div>
-                
-                <div class="speaker-search">
-                    <input type="text" class="search-input" id="speaker-search" placeholder="Search speakers..." oninput="filterSpeakers()">
-                </div>
-                
-                <div class="filter-section">
-                    <select class="filter-select" id="manufacturer-filter" onchange="filterSpeakers()">
-                        <option value="">All Manufacturers</option>
-                    </select>
-                    <select class="filter-select" id="type-filter" onchange="filterSpeakers()">
-                        <option value="">All Types</option>
-                    </select>
-                    <select class="filter-select" id="mount-filter" onchange="filterSpeakers()">
-                        <option value="">All Mount Types</option>
-                    </select>
-                </div>
-                
-                <div class="speaker-list-container" id="speaker-list-container">
-                    <!-- Speaker items will be populated by JavaScript -->
-                </div>
+        <div class="controls">
+            <div class="control-group">
+                <label for="roomWidth">Room Width (m):</label>
+                <input type="number" id="roomWidth" value="8" min="3" max="20" step="0.5">
             </div>
             
-            <!-- Center Area - Room Editor -->
-            <div class="center-area">
-                <div class="toolbar">
-                    <button class="tool-button active" id="speaker-tool" onclick="selectTool('speaker')">🔊 Speaker</button>
-                    <button class="tool-button" id="move-tool" onclick="selectTool('move')">↔️ Move</button>
-                    
-                    <div class="view-controls">
-                        <button class="tool-button active" id="top-view-btn" onclick="switchView('top')">📐 Top View</button>
-                        <button class="tool-button" id="side-view-btn" onclick="switchView('side')">📏 Side View</button>
-                    </div>
-                    
-                    <div class="toggle-control">
-                        <div class="checkbox checked" id="coverage-checkbox" onclick="toggleProfessionalBeamCoverage()"></div>
-                        <label>Show Coverage</label>
-                    </div>
-                    
-                    <div class="toggle-control">
-                        <div class="checkbox unchecked" id="spl-checkbox" onclick="toggleSplValues()"></div>
-                        <label>Show SPL Values</label>
-                    </div>
-                </div>
-                
-                <div class="room-editor top-view" id="room-editor">
-                    <div class="room-view-label" id="room-view-label">Top View - Floor Plan</div>
-                    <div class="room">
-                        <div class="room-label">Room: 8.0m × 5.0m × 3.5m</div>
-                    </div>
-                    
-                    <!-- Example placed speakers -->
-                    <div class="speaker selected" id="speaker1" style="left: 300px; top: 120px;" onclick="selectSpeaker(1)"></div>
-                    <div class="speaker-coverage" id="coverage1" style="left: 300px; top: 120px;"></div>
-                    
-                    <div class="speaker" id="speaker2" style="left: 400px; top: 120px;" onclick="selectSpeaker(2)"></div>
-                    <div class="speaker-coverage" id="coverage2" style="left: 400px; top: 120px;"></div>
-                    
-                    <div class="speaker" id="speaker3" style="left: 500px; top: 120px;" onclick="selectSpeaker(3)"></div>
-                    <div class="speaker-coverage" id="coverage3" style="left: 500px; top: 120px;"></div>
-                    
-                    <div class="coverage-overlay" id="coverage-overlay"></div>
-                </div>
+            <div class="control-group">
+                <label for="roomHeight">Room Height (m):</label>
+                <input type="number" id="roomHeight" value="6" min="2" max="10" step="0.5">
             </div>
             
-            <!-- Right Panel - Properties -->
-<div class="right-panel">
-    <div class="panel-header">Room & Speaker Properties</div>
-    
-    <!-- DELETE BUTTON MOVED HERE -->
-    <button class="action-button danger" onclick="deleteSelectedSpeaker()" style="margin: 15px 15px 10px 15px;">🗑️ Delete Selected Speaker</button>
-    
-    <!-- 3D Room Settings Section -->
-    <div class="section-header">3D Room Dimensions</div>
-    
-    <div class="property">
-        <div class="property-label">Length:</div>
-        <input type="number" class="property-value" id="room-length" value="8.0" min="2" max="30" step="0.1" onchange="updateRoomSize()"> m
-    </div>
-    
-    <div class="property">
-        <div class="property-label">Width:</div>
-        <input type="number" class="property-value" id="room-width" value="5.0" min="2" max="30" step="0.1" onchange="updateRoomSize()"> m
-    </div>
-    
-    <div class="property">
-        <div class="property-label">Height:</div>
-        <input type="number" class="property-value" id="room-height" value="3.5" min="2" max="12" step="0.1" onchange="updateRoomSize()"> m
-    </div>
-    
-    <!-- Selected Speaker Section -->
-    <div class="section-header">Selected Speaker</div>
-    
-    <div class="property">
-        <div class="property-label">Model:</div>
-        <div class="property-value" id="model-value">Select a speaker</div>
-    </div>
-    
-<div class="property">
-                    <div class="property-label">X Position (Length):</div>
-                    <input type="text" class="property-value" id="x-position" value="4.0 m" onchange="updatePosition()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Y Position (Width):</div>
-                    <input type="text" class="property-value" id="y-position" value="2.5 m" onchange="updatePosition()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Mount Height:</div>
-                    <input type="text" class="property-value" id="mount-height" value="1.2 m" onchange="updateMountHeight()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Rotation:</div>
-                    <input type="text" class="property-value" id="rotation" value="0°" onchange="updateRotation()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Tilt:</div>
-                    <input type="text" class="property-value" id="tilt" value="0°" onchange="updateTilt()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Mount Type:</div>
-                    <select class="property-value" id="mount-type" onchange="updateMountType()">
-                        <option value="stand">Floor Stand</option>
-                        <option value="flying">Flying/Rigged</option>
-                        <option value="wall">Wall Mount</option>
-                        <option value="ceiling">Ceiling Mount</option>
-                    </select>
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Power:</div>
-                    <input type="text" class="property-value" id="power" value="100W" onchange="updatePower()">
-                </div>
-                
-                <!-- Calculation Settings Section -->
-                <div class="section-header">Acoustic Settings</div>
-                
-                <div class="property">
-                    <div class="property-label">Target SPL:</div>
-                    <input type="text" class="property-value" id="target-spl" value="85 dB" onchange="updateTargetSpl()">
-                </div>
-                
-                <div class="property">
-                    <div class="property-label">Audience Height:</div>
-                    <input type="text" class="property-value" id="ear-height" value="1.2 m" onchange="updateEarHeight()">
-                </div>
-                
-                <div class="legend">
-                    <div class="legend-header">SPL Coverage Legend</div>
-                    
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #00aa00;"></div>
-                        <div>≥ 90 dB (Excellent)</div>
-                    </div>
-                    
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #aaaa00;"></div>
-                        <div>85-90 dB (Good)</div>
-                    </div>
-                    
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #aa0000;"></div>
-                        <div>< 85 dB (Poor)</div>
-                    </div>
-                </div>
-                
-                <button class="action-button primary" onclick="showPremiumDialog()">📄 Generate PDF Report</button>
-                </div>
-        </div>
-        
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="status-item">Room: 8.0m × 5.0m × 3.5m</div>
-            <div class="status-item" id="speaker-count">Speakers: 3</div>
-            <div class="status-item" id="average-spl">Average SPL: 87.2 dB</div>
-            <div class="status-item" id="current-view">View: Top</div>
-            <div class="status-item">© 2025 AuraVisual Pro</div>
-        </div>
-    </div>
-    
-    <!-- PDF Report Button (remove the old Delete button from here) -->
-    <button class="action-button primary" onclick="showPremiumDialog()">📄 Generate PDF Report</button>
-</div>
-        
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="status-item">Room: 8.0m × 5.0m × 3.5m</div>
-            <div class="status-item" id="speaker-count">Speakers: 3</div>
-            <div class="status-item" id="average-spl">Average SPL: 87.2 dB</div>
-            <div class="status-item" id="current-view">View: Top</div>
-            <div class="status-item">© 2025 AuraVisual Pro</div>
-        </div>
-    </div>
-    
-    <!-- Premium Feature Overlay -->
-    <div class="premium-overlay" id="premium-overlay">
-        <div class="premium-dialog">
-            <h2>🎯 Professional Feature</h2>
-            <p>PDF Report generation with detailed acoustic analysis is available in the professional version of AuraVisual.</p>
-            <div class="premium-features">
-                <ul>
-                    <li>📊 Detailed SPL Coverage Analysis</li>
-                    <li>📐 Professional CAD Export</li>
-                    <li>🔧 Advanced Speaker Database</li>
-                    <li>📱 Mobile App Access</li>
-                </ul>
+            <div class="control-group">
+                <label for="roomDepth">Room Depth (m):</label>
+                <input type="number" id="roomDepth" value="10" min="3" max="20" step="0.5">
             </div>
-            <button class="upgrade" onclick="upgradeToPremium()">Upgrade to Pro</button>
-            <button class="cancel" onclick="closePremiumDialog()">Continue with Free</button>
+            
+            <div class="control-group">
+                <label for="maxSPL">Max SPL (dB):</label>
+                <input type="number" id="maxSPL" value="110" min="80" max="140" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="speakerWall">Speaker Wall:</label>
+                <select id="speakerWall">
+                    <option value="front">Front Wall</option>
+                    <option value="back">Back Wall</option>
+                    <option value="left">Left Wall</option>
+                    <option value="right">Right Wall</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="speakerX">Speaker X Position:</label>
+                <input type="range" id="speakerX" min="0" max="100" value="50">
+                <span id="speakerXValue">50%</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="speakerY">Speaker Y Position:</label>
+                <input type="range" id="speakerY" min="0" max="100" value="50">
+                <span id="speakerYValue">50%</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="speakerZ">Speaker Z Position (Height):</label>
+                <input type="range" id="speakerZ" min="0" max="100" value="50">
+                <span id="speakerZValue">50%</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="horizontalRotation">Horizontal Rotation (°):</label>
+                <input type="range" id="horizontalRotation" min="0" max="360" value="0">
+                <span id="horizontalRotationValue">0°</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="verticalTilt">Vertical Tilt (°):</label>
+                <input type="range" id="verticalTilt" min="-90" max="90" value="0">
+                <span id="verticalTiltValue">0°</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="viewMode">View Mode:</label>
+                <select id="viewMode">
+                    <option value="top_1.2">Top View (1.2m listening height)</option>
+                    <option value="top_1.7">Top View (1.7m listening height)</option>
+                    <option value="side">Side View</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="views">
+            <div class="view-container">
+                <div class="view-title" id="viewTitle">Top View (1.2m Listening Height)</div>
+                <canvas id="mainView" width="800" height="600"></canvas>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>SPL Distribution Legend & Controls Guide</h3>
+            <div class="spl-legend">
+                <div class="legend-item">
+                    <div class="color-box" style="background: #ff0000;"></div>
+                    <span>110+ dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #ff8000;"></div>
+                    <span>100-110 dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #ffff00;"></div>
+                    <span>90-100 dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #80ff00;"></div>
+                    <span>80-90 dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #00ff80;"></div>
+                    <span>70-80 dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #0080ff;"></div>
+                    <span>60-70 dB</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background: #0000ff;"></div>
+                    <span><60 dB</span>
+                </div>
+            </div>
+            <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">
+                <strong>Position Controls:</strong><br>
+                • <strong>X Position:</strong> Left-right placement on wall<br>
+                • <strong>Y Position:</strong> Front-back position (for side walls)<br>
+                • <strong>Z Position:</strong> Height on wall (0% = floor, 100% = ceiling)<br>
+                • <strong>Horizontal Rotation:</strong> Swivel left-right (0-360°)<br>
+                • <strong>Vertical Tilt:</strong> Aim up/down (-90° to +90°)<br><br>
+                <strong>View Modes:</strong><br>
+                • <strong>Top View (1.2m):</strong> Standard seated listening height<br>
+                • <strong>Top View (1.7m):</strong> Standing listening height<br>
+                • <strong>Side View:</strong> Shows vertical dispersion and height relationships
+            </div>
+            <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
+                This simulation shows approximate SPL distribution based on speaker position, height, rotation, and dispersion pattern. 
+                Actual SPL may vary due to room acoustics, reflections, and speaker characteristics.
+            </p>
         </div>
     </div>
-    
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/professional-beam-coverage.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>
