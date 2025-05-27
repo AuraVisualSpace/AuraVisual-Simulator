@@ -1,5 +1,4 @@
- drawSideView(params) 
-{
+drawSideView(params) {
         console.log('Drawing enhanced side view');
         const ctx = this.mainCtx;
         const canvas = this.mainCanvas;
@@ -29,10 +28,8 @@
         const imageData = ctx.createImageData(canvas.width, canvas.height);
         const data = imageData.data;
         
-        for (let canvasX = 0; canvasX < canvas.width; canvasX += 2) 
-        {
-            for (let canvasY = 0; canvasY < canvas.height; canvasY += 2)
-             {
+        for (let canvasX = 0; canvasX < canvas.width; canvasX += 2) {
+            for (let canvasY = 0; canvasY < canvas.height; canvasY += 2) {
                 // Convert canvas coordinates to room coordinates
                 const roomY = (canvasX - offsetX) / scale;
                 const roomZ = roomHeight - (canvasY - offsetY) / scale;
@@ -44,8 +41,7 @@
                     const dz = roomZ - speaker.z;
                     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                     
-                    if (distance > 0.1) 
-                    {
+                    if (distance > 0.1) {
                         const horizontalDistance = Math.sqrt(dx * dx + dy * dy);
                         let horizontalAngle = 0;
                         if (horizontalDistance > 0.01) {
@@ -59,13 +55,10 @@
                         const alpha = Math.max(0.3, Math.min(0.8, spl / maxSPL));
                         
                         // Fill 2x2 pixel area
-                        for (let px = 0; px < 2 && canvasX + px < canvas.width; px++) 
-                        {
-                            for (let py = 0; py < 2 && canvasY + py < canvas.height; py++)
-                              {
+                        for (let px = 0; px < 2 && canvasX + px < canvas.width; px++) {
+                            for (let py = 0; py < 2 && canvasY + py < canvas.height; py++) {
                                 const index = ((canvasY + py) * canvas.width + (canvasX + px)) * 4;
-                                if (index < data.length - 3) 
-                                {
+                                if (index < data.length - 3) {
                                     data[index] = color.r;
                                     data[index + 1] = color.g;
                                     data[index + 2] = color.b;
@@ -77,7 +70,7 @@
                 }
             }
         }
-   
+        
         ctx.putImageData(imageData, 0, 0);
         
         // Draw room outline with glow
@@ -831,3 +824,4 @@ window.addEventListener('load', () => {
     } catch (error) {
         console.error('Error initializing SPLSimulator:', error);
     }
+});
