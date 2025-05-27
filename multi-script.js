@@ -18,45 +18,40 @@ class MultiSpeakerSPLSimulator {
         ];
         this.maxSpeakersForWall = 8;
         
-        // Wait for DOM to be fully loaded before setting up
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                this.setupEventListeners();
-                this.updateMaxSpeakers();
-                this.generateSpeakerControls();
-                this.updateSimulation();
-            });
-        } else {
-            this.setupEventListeners();
-            this.updateMaxSpeakers();
-            this.generateSpeakerControls();
+        // Setup immediately - DOM should be ready when constructor is called
+        this.setupEventListeners();
+        this.updateMaxSpeakers();
+        this.generateSpeakerControls();
+        
+        // Only update simulation after a small delay to ensure everything is ready
+        setTimeout(() => {
             this.updateSimulation();
-        }
+        }, 100);
         
         console.log('MultiSpeakerSPLSimulator constructor completed');
     }
     
     setupEventListeners() {
         console.log('Setting up event listeners');
-        const controls = [
-            'roomWidth', 'roomHeight', 'roomDepth', 'maxSPL', 'viewMode'
-        ];
         
-        controls.forEach(control => {
+        // Only listen to elements that actually exist in the HTML
+        const requiredControls = ['roomWidth', 'roomHeight', 'roomDepth', 'maxSPL', 'viewMode'];
+        
+        requiredControls.forEach(control => {
             const element = document.getElementById(control);
-            if (!element) {
-                console.error(`Element not found: ${control}`);
-                return;
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.updateDisplayValues();
+                    this.updateSimulation();
+                });
+                element.addEventListener('input', () => {
+                    this.updateDisplayValues();
+                    this.updateSimulation();
+                });
+                console.log(`Event listener added for: ${control}`);
+            } else {
+                console.warn(`Element not found: ${control}`);
             }
-            
-            element.addEventListener('change', () => {
-                this.updateDisplayValues();
-                this.updateSimulation();
-            });
-            element.addEventListener('input', () => {
-                this.updateDisplayValues();
-                this.updateSimulation();
-            });
         });
         
         // Speaker count control
@@ -71,6 +66,7 @@ class MultiSpeakerSPLSimulator {
                     numSpeakersValue.textContent = numSpeakersElement.value;
                 }
             });
+            console.log('Event listener added for: numSpeakers');
         }
         
         this.updateDisplayValues();
@@ -96,20 +92,19 @@ class MultiSpeakerSPLSimulator {
     }
     
     updateMaxSpeakers() {
-        // No longer needed since each speaker can be on any wall
-        // Set a reasonable default maximum
+        // Set a reasonable default maximum since speakers can be on any wall
         this.maxSpeakersForWall = 8;
         
-        // Update slider max value
+        // Update slider max value if it exists
         const numSpeakersSlider = document.getElementById('numSpeakers');
         if (numSpeakersSlider) {
             numSpeakersSlider.max = this.maxSpeakersForWall;
-            
-            // Update info text
-            const maxSpeakersInfo = document.getElementById('maxSpeakersInfo');
-            if (maxSpeakersInfo) {
-                maxSpeakersInfo.textContent = `Maximum ${this.maxSpeakersForWall} speakers total (3m spacing per wall)`;
-            }
+        }
+        
+        // Update info text if it exists
+        const maxSpeakersInfo = document.getElementById('maxSpeakersInfo');
+        if (maxSpeakersInfo) {
+            maxSpeakersInfo.textContent = `Maximum ${this.maxSpeakersForWall} speakers total (3m spacing per wall)`;
         }
     }
     
