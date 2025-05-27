@@ -1,4 +1,4 @@
-drawSideView(params) {
+ drawSideView(params) {
         console.log('Drawing enhanced side view');
         const ctx = this.mainCtx;
         const canvas = this.mainCanvas;
