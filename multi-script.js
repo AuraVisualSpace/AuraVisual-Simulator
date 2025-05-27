@@ -1,4 +1,5 @@
-class MultiSpeakerSPLSimulator {
+Here's the complete corrected JavaScript code for the Multi-Speaker SPL Simulator:
+javascriptclass MultiSpeakerSPLSimulator {
     constructor() {
         console.log('MultiSpeakerSPLSimulator constructor started');
         this.mainCanvas = document.getElementById('mainView');
@@ -500,7 +501,8 @@ class MultiSpeakerSPLSimulator {
                         const angleRad = Math.acos(Math.max(-1, Math.min(1, dotProduct)));
                         const angleDeg = (angleRad * 180) / Math.PI;
                         
-                        // Calculate vertical angle for side view
+                        // Calculate horizontal and vertical angles
+                        const horizontalAngle = Math.atan2(dy, dx) * 180 / Math.PI;
                         const verticalAngle = Math.atan2(dz, Math.sqrt(dx * dx + dy * dy)) * 180 / Math.PI;
                         
                         // Calculate SPL from this speaker
@@ -522,142 +524,9 @@ class MultiSpeakerSPLSimulator {
                 data[pixelIndex] = color.r;     // Red
                 data[pixelIndex + 1] = color.g; // Green
                 data[pixelIndex + 2] = color.b; // Blue
-                data[pixelIndex + 3] = 180;     // Alpha
-            }
-        }
-        
-        // Draw the SPL heatmap
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = gridWidth;
-        tempCanvas.height = gridHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-        
-        ctx.drawImage(tempCanvas, offsetX, offsetY, roomPixelWidth, roomPixelHeight);
-        
-        // Draw room outline
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(offsetX, offsetY, roomPixelWidth, roomPixelHeight);
-        
-        // Draw speakers
-        const speakerColors = ['#ff0000', '#0080ff', '#00ff00', '#ff8000', '#8000ff'];
-        
-        speakers.forEach((speakerConfig, index) => {
-            const speakerPos = this.getSpeakerPosition(params, speakerConfig);
-            
-            // Convert to canvas coordinates (side view: X vs Z)
-            const canvasX = offsetX + (speakerPos.x * scale);
-            const canvasY = offsetY + ((roomHeight - speakerPos.z) * scale);
-            
-            // Draw speaker position
-            const speakerColor = speakerColors[index % speakerColors.length];
-            ctx.fillStyle = speakerColor;
-            ctx.beginPath();
-            ctx.arc(canvasX, canvasY, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Draw white outline
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            // Draw speaker label
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`S${index + 1}`, canvasX, canvasY - 15);
-        });
-        
-        // Draw room dimensions
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${roomWidth}m`, offsetX + roomPixelWidth / 2, offsetY + roomPixelHeight + 20);
-        ctx.save();
-        ctx.translate(offsetX - 20, offsetY + roomPixelHeight / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText(`${roomHeight}m`, 0, 0);
-        ctx.restore();
-        
-        // Add floor and ceiling labels
-        ctx.fillStyle = '#cccccc';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText('Floor', offsetX + 5, offsetY + roomPixelHeight - 5);
-        ctx.fillText('Ceiling', offsetX + 5, offsetY + 15);
-    }
-    
-    updateSimulation() {
-        console.log('Updating simulation...');
-        const params = this.getParameters();
-        const viewMode = params.viewMode;
-        
-        // Update view title
-        const viewTitle = document.getElementById('viewTitle');
-        if (viewTitle) {
-            switch (viewMode) {
-                case 'top_1.2':
-                    viewTitle.textContent = 'Top View (1.2m Listening Height)';
-                    break;
-                case 'top_1.7':
-                    viewTitle.textContent = 'Top View (1.7m Standing Height)';
-                    break;
-                case 'side':
-                    viewTitle.textContent = 'Side View (Vertical Analysis)';
-                    break;
-            }
-        }
-        
-        try {
-            if (viewMode === 'side') {
-                this.drawSideView(params);
-            } else {
-                const listeningHeight = viewMode === 'top_1.7' ? 1.7 : 1.2;
-                this.drawTopView(params, listeningHeight);
-            }
-            console.log('Simulation updated successfully');
-        } catch (error) {
-            console.error('Error updating simulation:', error);
-        }
-    }
-}
-
-// Initialize the simulator when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing MultiSpeakerSPLSimulator');
-    try {
-        window.simulator = new MultiSpeakerSPLSimulator();
-        console.log('MultiSpeakerSPLSimulator initialized successfully');
-    } catch (error) {
-        console.error('Error initializing MultiSpeakerSPLSimulator:', error);
-    }
-});speakerDir.z * vectorToPoint.z;
-                        const angleRad = Math.acos(Math.max(-1, Math.min(1, dotProduct)));
-                        const angleDeg = (angleRad * 180) / Math.PI;
-                        
-                        // Calculate horizontal and vertical angles
-                        const horizontalAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-                        const verticalAngle = Math.atan2(dz, Math.sqrt(dx * dx + dy * dy)) * 180 / Math.PI;
-                        
-                        // Calculate SPL from this speaker
-                        const spl = this.calculateSPL(distance, angleDeg, verticalAngle, maxSPL);
-                        
-                        // Add SPL energy (logarithmic addition)
-                        totalSPL += Math.pow(10, spl / 10);
-                      // Convert back to dB
-                const combinedSPL = totalSPL > 0 ? 10 * Math.log10(totalSPL) : 0;
-                
-                // Get color for this SPL level
-                const color = this.getSPLColorRGB(combinedSPL);
-                
-                // Set pixel color
-                const pixelIndex = (y * gridWidth + x) * 4;
-                data[pixelIndex] = color.r;     // Red
-                data[pixelIndex + 1] = color.g; // Green
-                data[pixelIndex + 2] = color.b; // Blue
                 data[pixelIndex + 3] = 180;     // Alpha (transparency)
-
+            }
+        }
         
         // Draw the SPL heatmap
         const tempCanvas = document.createElement('canvas');
@@ -743,7 +612,13 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(`${roomDepth}m`, 0, 0);
         ctx.restore();
-
+        
+        // Add listening height label
+        ctx.fillStyle = '#cccccc';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Listening height: ${listeningHeight}m`, offsetX + 5, offsetY + 15);
+    }
     
     drawSideView(params) {
         const canvas = this.mainCanvas;
@@ -877,7 +752,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.font = 'bold 14px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(`S${index + 1}`, canvasX, canvasY - 15);
-   
+        });
         
         // Draw room dimensions
         ctx.fillStyle = '#ffffff';
