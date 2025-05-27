@@ -644,8 +644,8 @@ class SPLSimulator {
             ctx.fillText('🧍 1.7m (Standing)', offsetX + roomDepth * scale + 15, height17Y + 5);
         }
         if (roomHeight >= 1.2) {
-            const height12Y = offsetY + (roomHeight - 1.2) * scale
-             ctx.fillText('🪑 1.2m (Seated)', offsetX + roomDepth * scale + 15, height12Y + 5);
+            const height12Y = offsetY + (roomHeight - 1.2) * scale;
+            ctx.fillText('🪑 1.2m (Seated)', offsetX + roomDepth * scale + 15, height12Y + 5);
        }
        
        // Add room dimensions and speaker info
