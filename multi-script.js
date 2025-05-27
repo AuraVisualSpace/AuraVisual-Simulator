@@ -16,12 +16,23 @@ class MultiSpeakerSPLSimulator {
         this.speakers = [
             { x: 50, z: 50, horizontalRotation: 0, verticalTilt: 0, wall: 'front' }
         ];
-        this.maxSpeakersForWall = 1;
+        this.maxSpeakersForWall = 8;
         
-        this.setupEventListeners();
-        this.updateMaxSpeakers();
-        this.generateSpeakerControls();
-        this.updateSimulation();
+        // Wait for DOM to be fully loaded before setting up
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.setupEventListeners();
+                this.updateMaxSpeakers();
+                this.generateSpeakerControls();
+                this.updateSimulation();
+            });
+        } else {
+            this.setupEventListeners();
+            this.updateMaxSpeakers();
+            this.generateSpeakerControls();
+            this.updateSimulation();
+        }
+        
         console.log('MultiSpeakerSPLSimulator constructor completed');
     }
     
@@ -55,7 +66,10 @@ class MultiSpeakerSPLSimulator {
                 this.setNumberOfSpeakers(parseInt(numSpeakersElement.value));
             });
             numSpeakersElement.addEventListener('input', () => {
-                document.getElementById('numSpeakersValue').textContent = numSpeakersElement.value;
+                const numSpeakersValue = document.getElementById('numSpeakersValue');
+                if (numSpeakersValue) {
+                    numSpeakersValue.textContent = numSpeakersElement.value;
+                }
             });
         }
         
