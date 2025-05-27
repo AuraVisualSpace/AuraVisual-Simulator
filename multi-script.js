@@ -161,8 +161,8 @@ class MultiSpeakerSPLSimulator {
     }
     
     validateSpeakerSpacing(speakerIndex, newXPosition) {
-        const roomWidth = parseFloat(document.getElementById('roomWidth').value);
-        const roomDepth = parseFloat(document.getElementById('roomDepth').value);
+        const roomWidth = parseFloat(document.getElementById('roomWidth')?.value || 10);
+        const roomDepth = parseFloat(document.getElementById('roomDepth')?.value || 8);
         const speakerWall = this.speakers[speakerIndex].wall;
         
         const wallLength = (speakerWall === 'front' || speakerWall === 'back') 
