@@ -449,7 +449,7 @@ class SPLSimulator {
     }
     
     drawSideView(params) {
-        console.log('Drawing enhanced side view');
+        console.log('Drawing enhanced side view with vertical tilt rendering');
         const ctx = this.mainCtx;
         const canvas = this.mainCanvas;
         const { roomDepth, roomHeight, maxSPL } = params;
@@ -492,14 +492,19 @@ class SPLSimulator {
                     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                     
                     if (distance > 0.1) {
+                        // Calculate horizontal angle (should be minimal in side view)
                         const horizontalDistance = Math.sqrt(dx * dx + dy * dy);
                         let horizontalAngle = 0;
                         if (horizontalDistance > 0.01) {
                             horizontalAngle = Math.atan2(Math.abs(dx), Math.abs(dy)) * 180 / Math.PI;
                         }
                         
-                        const verticalAngle = Math.atan2(dz, Math.max(horizontalDistance, 0.01)) * 180 / Math.PI;
-                        const spl = this.calculateSPL(distance, horizontalAngle, verticalAngle, maxSPL);
+                        // Calculate vertical angle relative to speaker's tilted direction
+                        const actualVerticalAngle = Math.atan2(dz, Math.max(horizontalDistance, 0.01)) * 180 / Math.PI;
+                        const speakerVerticalAngle = params.verticalTilt; // Speaker's tilt angle
+                        const relativeVerticalAngle = Math.abs(actualVerticalAngle - speakerVerticalAngle);
+                        
+                        const spl = this.calculateSPL(distance, horizontalAngle, relativeVerticalAngle, maxSPL);
                         const color = this.getSPLColorRGB(spl);
                         
                         // Better alpha calculation for side view
@@ -557,24 +562,37 @@ class SPLSimulator {
         
         ctx.setLineDash([]);
         
-        // Draw vertical dispersion pattern with gradients
+        // Draw vertical dispersion pattern with proper tilt rendering
         const speakerPixelX = offsetX + speaker.y * scale;
         const speakerPixelY = offsetY + (roomHeight - speaker.z) * scale;
         
-        const horizontalMag = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-        const verticalDirection = Math.atan2(direction.z, Math.max(horizontalMag, 0.01));
+        // Calculate proper vertical direction with tilt
+        const verticalTiltRad = (params.verticalTilt * Math.PI) / 180;
+        
+        // Base direction for side view (horizontal forward)
+        const baseVerticalDirection = 0; // 0 radians = horizontal forward
+        
+        // Apply vertical tilt - positive tilt aims upward, negative downward
+        const adjustedVerticalDirection = baseVerticalDirection + verticalTiltRad;
         
         const coneLength = 120;
-        const topAngle = verticalDirection + Math.PI / 8;
-        const bottomAngle = verticalDirection - Math.PI / 8;
+        const dispersionAngle = Math.PI / 8; // 22.5° vertical dispersion
+        const topAngle = adjustedVerticalDirection + dispersionAngle;
+        const bottomAngle = adjustedVerticalDirection - dispersionAngle;
         
-        // Create gradient for vertical dispersion
+        // Create gradient for vertical dispersion with tilt-aware coloring
         const vertConeGradient = ctx.createRadialGradient(
             speakerPixelX, speakerPixelY, 0,
             speakerPixelX, speakerPixelY, coneLength
         );
-        vertConeGradient.addColorStop(0, 'rgba(255, 255, 0, 0.4)');
-        vertConeGradient.addColorStop(1, 'rgba(255, 255, 0, 0.1)');
+        
+        // Color intensity based on tilt direction
+        const tiltIntensity = Math.abs(params.verticalTilt) / 45; // Normalize to 0-1 for ±45°
+        const baseAlpha = 0.3 + (tiltIntensity * 0.2); // More visible with higher tilt
+        
+        vertConeGradient.addColorStop(0, `rgba(255, 255, 0, ${baseAlpha + 0.1})`);
+        vertConeGradient.addColorStop(0.7, `rgba(255, 255, 0, ${baseAlpha})`);
+        vertConeGradient.addColorStop(1, `rgba(255, 255, 0, 0.05)`);
         
         // Draw filled vertical dispersion cone
         ctx.fillStyle = vertConeGradient;
@@ -591,9 +609,9 @@ class SPLSimulator {
         ctx.closePath();
         ctx.fill();
         
-        // Draw dispersion outline
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 2;
+        // Draw dispersion outline with tilt-aware styling
+        ctx.strokeStyle = params.verticalTilt === 0 ? '#ffff00' : '#ff8800'; // Change color when tilted
+        ctx.lineWidth = 2 + Math.abs(params.verticalTilt) / 30; // Thicker line with more tilt
         ctx.beginPath();
         ctx.moveTo(speakerPixelX, speakerPixelY);
         ctx.lineTo(
@@ -607,17 +625,41 @@ class SPLSimulator {
         );
         ctx.stroke();
         
-        // Draw center axis
-        ctx.strokeStyle = '#ff8800';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 5]);
+        // Draw center axis with enhanced tilt visualization
+        const centerAxisColor = params.verticalTilt > 0 ? '#ff4400' : 
+                               params.verticalTilt < 0 ? '#0088ff' : '#ff8800';
+        ctx.strokeStyle = centerAxisColor; // Red for up-tilt, blue for down-tilt, orange for center
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
         ctx.beginPath();
         ctx.moveTo(speakerPixelX, speakerPixelY);
         ctx.lineTo(
-            speakerPixelX + Math.cos(verticalDirection) * coneLength,
-            speakerPixelY - Math.sin(verticalDirection) * coneLength
+            speakerPixelX + Math.cos(adjustedVerticalDirection) * coneLength,
+            speakerPixelY - Math.sin(adjustedVerticalDirection) * coneLength
         );
         ctx.stroke();
+        
+        // Add tilt direction arrow
+        if (Math.abs(params.verticalTilt) > 2) { // Show arrow for significant tilts
+            const arrowSize = 12;
+            const arrowX = speakerPixelX + Math.cos(adjustedVerticalDirection) * (coneLength * 0.8);
+            const arrowY = speakerPixelY - Math.sin(adjustedVerticalDirection) * (coneLength * 0.8);
+            
+            ctx.setLineDash([]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // Arrow head pointing in tilt direction
+            const perpAngle1 = adjustedVerticalDirection + Math.PI * 0.8;
+            const perpAngle2 = adjustedVerticalDirection - Math.PI * 0.8;
+            
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + Math.cos(perpAngle1) * arrowSize, arrowY - Math.sin(perpAngle1) * arrowSize);
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + Math.cos(perpAngle2) * arrowSize, arrowY - Math.sin(perpAngle2) * arrowSize);
+            ctx.stroke();
+        }
+        
         ctx.setLineDash([]);
         
         // Draw enhanced speaker
@@ -634,7 +676,7 @@ class SPLSimulator {
         ctx.arc(speakerPixelX, speakerPixelY, 6, 0, 2 * Math.PI);
         ctx.fill();
         
-        // Enhanced labels with icons
+        // Enhanced labels with tilt information
         ctx.fillStyle = 'rgba(0, 255, 128, 0.9)';
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'left';
@@ -646,60 +688,69 @@ class SPLSimulator {
         if (roomHeight >= 1.2) {
             const height12Y = offsetY + (roomHeight - 1.2) * scale;
             ctx.fillText('🪑 1.2m (Seated)', offsetX + roomDepth * scale + 15, height12Y + 5);
-       }
-       
-       // Add room dimensions and speaker info
-       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-       ctx.font = 'bold 16px Arial';
-       ctx.fillText('📐 Side View Analysis', 20, 35);
-       
-       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-       ctx.font = '12px Arial';
-       ctx.fillText(`Room: ${roomDepth}m × ${roomHeight}m`, 20, canvas.height - 40);
-       ctx.fillText(`Speaker Height: ${(speaker.z).toFixed(1)}m`, 20, canvas.height - 20);
-       
-       console.log('Enhanced side view drawing completed');
-   }
-   
-   updateSimulation() {
-       console.log('Updating simulation...');
-       const params = this.getParameters();
-       const viewTitle = document.getElementById('viewTitle');
-       
-       if (!viewTitle) {
-           console.error('View title element not found');
-           return;
-       }
-       
-       console.log('View mode:', params.viewMode);
-       
-       try {
-           if (params.viewMode === 'top_1.2') {
-               viewTitle.textContent = 'Top View (1.2m Listening Height)';
-               this.drawTopView(params, 1.2);
-           } else if (params.viewMode === 'top_1.7') {
-               viewTitle.textContent = 'Top View (1.7m Listening Height)';
-               this.drawTopView(params, 1.7);
-           } else if (params.viewMode === 'side') {
-               viewTitle.textContent = 'Side View (45° Vertical Dispersion)';
-               this.drawSideView(params);
-           } else {
-               console.log('Using default view mode');
-               viewTitle.textContent = 'Top View (1.2m Listening Height)';
-               this.drawTopView(params, 1.2);
-           }
-       } catch (error) {
-           console.error('Error in updateSimulation:', error);
-       }
-   }
+        }
+        
+        // Add tilt direction indicator
+        if (Math.abs(params.verticalTilt) > 0) {
+            const tiltDirection = params.verticalTilt > 0 ? '↗️ Tilted UP' : '↘️ Tilted DOWN';
+            const tiltColor = params.verticalTilt > 0 ? 'rgba(255, 68, 0, 0.9)' : 'rgba(0, 136, 255, 0.9)';
+            ctx.fillStyle = tiltColor;
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(tiltDirection, offsetX + roomDepth * scale + 15, offsetY + 30);
+        }
+        
+        // Add room dimensions and speaker info
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('📐 Side View Analysis', 20, 35);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '12px Arial';
+        ctx.fillText(`Room: ${roomDepth}m × ${roomHeight}m`, 20, canvas.height - 40);
+        ctx.fillText(`Speaker Height: ${(speaker.z).toFixed(1)}m | Tilt: ${params.verticalTilt}°`, 20, canvas.height - 20);
+        
+        console.log('Enhanced side view drawing completed');
+    }
+    
+    updateSimulation() {
+        console.log('Updating simulation...');
+        const params = this.getParameters();
+        const viewTitle = document.getElementById('viewTitle');
+        
+        if (!viewTitle) {
+            console.error('View title element not found');
+            return;
+        }
+        
+        console.log('View mode:', params.viewMode);
+        
+        try {
+            if (params.viewMode === 'top_1.2') {
+                viewTitle.textContent = 'Top View (1.2m Listening Height)';
+                this.drawTopView(params, 1.2);
+            } else if (params.viewMode === 'top_1.7') {
+                viewTitle.textContent = 'Top View (1.7m Listening Height)';
+                this.drawTopView(params, 1.7);
+            } else if (params.viewMode === 'side') {
+                viewTitle.textContent = 'Side View (45° Vertical Dispersion)';
+                this.drawSideView(params);
+            } else {
+                console.log('Using default view mode');
+                viewTitle.textContent = 'Top View (1.2m Listening Height)';
+                this.drawTopView(params, 1.2);
+            }
+        } catch (error) {
+            console.error('Error in updateSimulation:', error);
+        }
+    }
 }
 
 // Initialize the simulator when the page loads
 window.addEventListener('load', () => {
-   console.log('Page loaded, initializing SPLSimulator...');
-   try {
-       new SPLSimulator();
-   } catch (error) {
-       console.error('Error initializing SPLSimulator:', error);
-   }
+    console.log('Page loaded, initializing SPLSimulator...');
+    try {
+        new SPLSimulator();
+    } catch (error) {
+        console.error('Error initializing SPLSimulator:', error);
+    }
 });
