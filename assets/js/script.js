@@ -77,7 +77,7 @@
                 }
             }
         }
-}   
+   
         ctx.putImageData(imageData, 0, 0);
         
         // Draw room outline with glow
@@ -831,4 +831,4 @@ window.addEventListener('load', () => {
     } catch (error) {
         console.error('Error initializing SPLSimulator:', error);
     }
-});
+}
