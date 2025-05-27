@@ -1,5 +1,4 @@
-Here's the complete corrected JavaScript code for the Multi-Speaker SPL Simulator:
-javascriptclass MultiSpeakerSPLSimulator {
+class MultiSpeakerSPLSimulator {
     constructor() {
         console.log('MultiSpeakerSPLSimulator constructor started');
         this.mainCanvas = document.getElementById('mainView');
