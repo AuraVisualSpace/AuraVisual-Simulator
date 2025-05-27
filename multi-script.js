@@ -743,7 +743,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(`${roomDepth}m`, 0, 0);
         ctx.restore();
-    }
+
     
     drawSideView(params) {
         const canvas = this.mainCanvas;
