@@ -824,4 +824,4 @@ window.addEventListener('load', () => {
     } catch (error) {
         console.error('Error initializing SPLSimulator:', error);
     }
-});
+})
