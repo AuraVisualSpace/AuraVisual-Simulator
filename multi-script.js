@@ -14,7 +14,7 @@ class MultiSpeakerSPLSimulator {
         
         // Initialize speakers array
         this.speakers = [
-            { x: 50, y: 50, z: 50, horizontalRotation: 0, verticalTilt: 0 }
+            { x: 50, z: 50, horizontalRotation: 0, verticalTilt: 0, wall: 'front' }
         ];
         this.maxSpeakersForWall = 1;
         
@@ -28,7 +28,7 @@ class MultiSpeakerSPLSimulator {
     setupEventListeners() {
         console.log('Setting up event listeners');
         const controls = [
-            'roomWidth', 'roomHeight', 'roomDepth', 'maxSPL', 'speakerWall', 'viewMode'
+            'roomWidth', 'roomHeight', 'roomDepth', 'maxSPL', 'viewMode'
         ];
         
         controls.forEach(control => {
@@ -39,18 +39,10 @@ class MultiSpeakerSPLSimulator {
             }
             
             element.addEventListener('change', () => {
-                if (['roomWidth', 'roomDepth', 'speakerWall'].includes(control)) {
-                    this.updateMaxSpeakers();
-                    this.validateSpeakerCount();
-                    this.generateSpeakerControls();
-                }
                 this.updateDisplayValues();
                 this.updateSimulation();
             });
             element.addEventListener('input', () => {
-                if (['roomWidth', 'roomDepth', 'speakerWall'].includes(control)) {
-                    this.updateMaxSpeakers();
-                }
                 this.updateDisplayValues();
                 this.updateSimulation();
             });
@@ -90,19 +82,33 @@ class MultiSpeakerSPLSimulator {
     }
     
     updateMaxSpeakers() {
-        const roomWidth = parseFloat(document.getElementById('roomWidth').value);
-        const roomDepth = parseFloat(document.getElementById('roomDepth').value);
-        const speakerWall = document.getElementById('speakerWall').value;
-        
-        const wallLength = (speakerWall === 'front' || speakerWall === 'back') 
-            ? roomWidth : roomDepth;
-        
-        this.maxSpeakersForWall = this.getMaxSpeakersForWall(wallLength);
+        // No longer needed since each speaker can be on any wall
+        // Set a reasonable default maximum
+        this.maxSpeakersForWall = 8;
         
         // Update slider max value
         const numSpeakersSlider = document.getElementById('numSpeakers');
         if (numSpeakersSlider) {
             numSpeakersSlider.max = this.maxSpeakersForWall;
+            
+            // Update info text
+            const maxSpeakersInfo = document.getElementById('maxSpeakersInfo');
+            if (maxSpeakersInfo) {
+                maxSpeakersInfo.textContent = `Maximum ${this.maxSpeakersForWall} speakers total (3m spacing per wall)`;
+            }
+        }
+    }
+    
+    validateSpeakerCount() {
+        if (this.speakers.length > this.maxSpeakersForWall) {
+            this.speakers = this.speakers.slice(0, this.maxSpeakersForWall);
+            const numSpeakersSlider = document.getElementById('numSpeakers');
+            if (numSpeakersSlider) {
+                numSpeakersSlider.value = this.speakers.length;
+                this.updateDisplayValues();
+            }
+        }
+    }.max = this.maxSpeakersForWall;
             
             // Update info text
             const maxSpeakersInfo = document.getElementById('maxSpeakersInfo');
@@ -117,7 +123,7 @@ class MultiSpeakerSPLSimulator {
         
         // Adjust speakers array
         while (this.speakers.length < validCount) {
-            this.speakers.push({ x: 50, y: 50, z: 50, horizontalRotation: 0, verticalTilt: 0 });
+            this.speakers.push({ x: 50, z: 50, horizontalRotation: 0, verticalTilt: 0, wall: 'front' });
         }
         while (this.speakers.length > validCount) {
             this.speakers.pop();
@@ -148,15 +154,16 @@ class MultiSpeakerSPLSimulator {
     validateSpeakerSpacing(speakerIndex, newXPosition) {
         const roomWidth = parseFloat(document.getElementById('roomWidth').value);
         const roomDepth = parseFloat(document.getElementById('roomDepth').value);
-        const speakerWall = document.getElementById('speakerWall').value;
+        const speakerWall = this.speakers[speakerIndex].wall;
         
         const wallLength = (speakerWall === 'front' || speakerWall === 'back') 
             ? roomWidth : roomDepth;
         
         const newPositionMeters = (newXPosition / 100) * wallLength;
         
+        // Only check spacing against speakers on the same wall
         for (let i = 0; i < this.speakers.length; i++) {
-            if (i === speakerIndex) continue;
+            if (i === speakerIndex || this.speakers[i].wall !== speakerWall) continue;
             
             const otherPositionMeters = (this.speakers[i].x / 100) * wallLength;
             const distance = Math.abs(newPositionMeters - otherPositionMeters);
@@ -185,6 +192,16 @@ class MultiSpeakerSPLSimulator {
                         <div class="speaker-color" style="background-color: ${speakerColors[index % speakerColors.length]};"></div>
                         🔊 Speaker ${index + 1}
                     </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="speaker${index}Wall">Wall</label>
+                    <select id="speaker${index}Wall">
+                        <option value="front" ${speaker.wall === 'front' ? 'selected' : ''}>Front Wall</option>
+                        <option value="back" ${speaker.wall === 'back' ? 'selected' : ''}>Back Wall</option>
+                        <option value="left" ${speaker.wall === 'left' ? 'selected' : ''}>Left Wall</option>
+                        <option value="right" ${speaker.wall === 'right' ? 'selected' : ''}>Right Wall</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
@@ -228,15 +245,15 @@ class MultiSpeakerSPLSimulator {
     }
     
     addSpeakerEventListeners(speakerIndex) {
-        const controls = ['X', 'Z', 'HorizontalRotation', 'VerticalTilt'];
+        const controls = ['Wall', 'X', 'Z', 'HorizontalRotation', 'VerticalTilt'];
         
         controls.forEach(control => {
             const element = document.getElementById(`speaker${speakerIndex}${control}`);
             const valueElement = document.getElementById(`speaker${speakerIndex}${control}Value`);
             
-            if (element && valueElement) {
+            if (element) {
                 element.addEventListener('input', (e) => {
-                    const newValue = parseFloat(e.target.value);
+                    const newValue = control === 'Wall' ? e.target.value : parseFloat(e.target.value);
                     
                     // Special validation for X position (3m spacing rule)
                     if (control === 'X') {
@@ -248,14 +265,17 @@ class MultiSpeakerSPLSimulator {
                     }
                     
                     // Update speaker property
-                    if (control === 'X') this.speakers[speakerIndex].x = newValue;
+                    if (control === 'Wall') this.speakers[speakerIndex].wall = newValue;
+                    else if (control === 'X') this.speakers[speakerIndex].x = newValue;
                     else if (control === 'Z') this.speakers[speakerIndex].z = newValue;
                     else if (control === 'HorizontalRotation') this.speakers[speakerIndex].horizontalRotation = newValue;
                     else if (control === 'VerticalTilt') this.speakers[speakerIndex].verticalTilt = newValue;
                     
-                    // Update display
-                    const suffix = (control === 'HorizontalRotation' || control === 'VerticalTilt') ? '°' : '%';
-                    valueElement.textContent = newValue + suffix;
+                    // Update display for non-wall controls
+                    if (valueElement && control !== 'Wall') {
+                        const suffix = (control === 'HorizontalRotation' || control === 'VerticalTilt') ? '°' : '%';
+                        valueElement.textContent = newValue + suffix;
+                    }
                     
                     this.updateSimulation();
                 });
@@ -269,18 +289,17 @@ class MultiSpeakerSPLSimulator {
             roomHeight: parseFloat(document.getElementById('roomHeight').value),
             roomDepth: parseFloat(document.getElementById('roomDepth').value),
             maxSPL: parseFloat(document.getElementById('maxSPL').value),
-            speakerWall: document.getElementById('speakerWall').value,
             viewMode: document.getElementById('viewMode').value,
             speakers: this.speakers
         };
     }
     
     getSpeakerPosition(params, speakerConfig) {
-        const { roomWidth, roomHeight, roomDepth, speakerWall } = params;
-        const { x, y, z } = speakerConfig;
+        const { roomWidth, roomHeight, roomDepth } = params;
+        const { x, z, wall } = speakerConfig;
         
         let position;
-        switch (speakerWall) {
+        switch (wall) {
             case 'front':
                 position = { 
                     x: (x / 100) * roomWidth, 
@@ -298,14 +317,14 @@ class MultiSpeakerSPLSimulator {
             case 'left':
                 position = { 
                     x: 0, 
-                    y: (y / 100) * roomDepth, 
+                    y: (x / 100) * roomDepth, 
                     z: (z / 100) * roomHeight 
                 };
                 break;
             case 'right':
                 position = { 
                     x: roomWidth, 
-                    y: (y / 100) * roomDepth, 
+                    y: (x / 100) * roomDepth, 
                     z: (z / 100) * roomHeight 
                 };
                 break;
@@ -321,14 +340,13 @@ class MultiSpeakerSPLSimulator {
     }
     
     getSpeakerDirection(params, speakerConfig) {
-        const { speakerWall } = params;
-        const { horizontalRotation, verticalTilt } = speakerConfig;
+        const { wall, horizontalRotation, verticalTilt } = speakerConfig;
         const horizRotRad = (horizontalRotation * Math.PI) / 180;
         const vertTiltRad = (verticalTilt * Math.PI) / 180;
         
         // Base direction depending on wall
         let baseDirection;
-        switch (speakerWall) {
+        switch (wall) {
             case 'front':
                 baseDirection = { x: 0, y: 1, z: 0 };
                 break;
