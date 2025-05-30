@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -116,10 +115,9 @@ const africanCountries: Record<string, Country> = {
   },
 }
 
-// World map topology URL (using Natural Earth data)
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
 
-export default function Component() {
+export default function WorldMap() {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null)
   const [popup, setPopup] = useState<PopupPosition | null>(null)
 
@@ -285,14 +283,12 @@ export default function Component() {
                   </a>
                 </div>
 
-                {/* Space for your custom details */}
                 <div className="mt-4 pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-500 italic">Add your custom details here...</p>
                 </div>
               </div>
             )}
 
-            {/* Overlay to close popup when clicking outside */}
             {popup && <div className="absolute inset-0 z-40" onClick={closePopup} />}
           </div>
 
