@@ -1,1 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The World Mission Rosary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: #2c5aa0;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-text {
+            font-size: 1.1rem;
+            color: #2d3748;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .rosary-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .rosary-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .bead-section {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem;
+        }
+
+        .bead {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 3px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .yellow { background: #ffd700; }
+        .red { background: #dc3545; }
+        .white { background: #ffffff; border-color: #666; }
+        .blue { background: #007bff; }
+        .green { background: #28a745; }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .color-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            border-left: 6px solid;
+            transition: all 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-card.yellow { border-left-color: #ffd700; }
+        .color-card.red { border-left-color: #dc3545; }
+        .color-card.white { border-left-color: #6c757d; }
+        .color-card.blue { border-left-color: #007bff; }
+        .color-card.green { border-left-color: #28a745; }
+
+        .color-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-circle.yellow { background: #ffd700; color: #333; text-shadow: none; }
+        .color-circle.red { background: #dc3545; }
+        .color-circle.white { background: #ffffff; color: #333; text-shadow: none; }
+        .color-circle.blue { background: #007bff; }
+        .color-circle.green { background: #28a745; }
+
+        .color-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: #2c5aa0;
+        }
+
+        .color-card .continent {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .color-card .description {
+            color: #666;
+            font-style: italic;
+        }
+
+        .quote-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            margin: 2rem 0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .quote-section .quote {
+            font-size: 1.3rem;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .quote-section .author {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .info-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            font-size: 1.8rem;
+            color: #2c5aa0;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card p {
+            margin-bottom: 1rem;
+            color: #2d3748;
+            line-height: 1.7;
+        }
+
+        .reminder-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .reminder-box h4 {
+            color: #856404;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reminder-box p {
+            color: #856404;
+            margin: 0;
+        }
+
+        .rosary-colors-note {
+            background: #e7f3ff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-left: 5px solid #007bff;
+        }
+
+        .rosary-colors-note p {
+            color: #004085;
+            margin: 0;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .colors-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-sections {
+                grid-template-columns: 1fr;
+            }
+
+            .rosary-visual {
+                flex-direction: column;
+            }
+        }
+
+        .cross {
+            font-size: 2rem;
+            color: #8b4513;
+            margin: 0 1rem;
+        }
+
+        .prayer-instruction {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-left: 5px solid #4169e1;
+        }
+
+        .prayer-instruction h4 {
+            color: #4169e1;
+            margin-bottom: 1rem;
+        }
+
+        .prayer-instruction p {
+            color: #2d3748;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>✝️ The World Mission Rosary</h1>
+            <div class="subtitle">Created by Archbishop Fulton J. Sheen in 1951</div>
+            <div class="intro-text">
+                Archbishop Fulton J. Sheen loved the missions. And he wanted us to pray for our mission family. 
+                So in 1951 he created the World Mission Rosary, a beautiful way to embrace the entire world in prayer.
+            </div>
+        </div>
+
+        <!-- Rosary Colors Section -->
+        <div class="rosary-section">
+            <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 2rem; font-size: 2.2rem;">
+                Each Color Represents a Continent
+            </h2>
+            
+            <!-- Visual Rosary Representation -->
+            <div class="rosary-visual">
+                <div class="bead-section">
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                </div>
+                <div class="cross">✝</div>
+                <div class="bead-section">
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                </div>
+            </div>
+
+            <div class="colors-grid">
+                <div class="color-card yellow">
+                    <div class="color-circle yellow">🌅</div>
+                    <h3>Yellow</h3>
+                    <div class="continent">ASIA</div>
+                    <div class="description">Where the sun rises first each day</div>
+                </div>
+
+                <div class="color-card red">
+                    <div class="color-circle red">🔥</div>
+                    <h3>Red</h3>
+                    <div class="continent">THE AMERICAS</div>
+                    <div class="description">Where missionaries journeyed, "on fire" with faith in Jesus</div>
+                </div>
+
+                <div class="color-card white">
+                    <div class="color-circle white">👑</div>
+                    <h3>White</h3>
+                    <div class="continent">EUROPE</div>
+                    <div class="description">Home to the Pope, clothed in white</div>
+                </div>
+
+                <div class="color-card blue">
+                    <div class="color-circle blue">🌊</div>
+                    <h3>Blue</h3>
+                    <div class="continent">PACIFIC ISLANDS</div>
+                    <div class="description">Surrounded by the ocean waters</div>
+                </div>
+
+                <div class="color-card green">
+                    <div class="color-circle green">🌳</div>
+                    <h3>Green</h3>
+                    <div class="continent">AFRICA</div>
+                    <div class="description">With its many trees and plants</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prayer Instruction -->
+        <div class="prayer-instruction">
+            <h4>🙏 How to Pray the World Mission Rosary</h4>
+            <p>To pray the World Mission Rosary, think about each area of the world when you start a new set of beads. 
+            As you move through each decade, hold that continent and its people in your heart and prayers.</p>
+        </div>
+
+        <!-- Quote Section -->
+        <div class="quote-section">
+            <div class="quote">
+                "When you have finished praying the World Mission Rosary, 
+                you have given the world a 'great big hug'!"
+            </div>
+            <div class="author">— Archbishop Fulton J. Sheen</div>
+        </div>
+
+        <!-- Note about arrangements -->
+        <div class="rosary-colors-note">
+            <p><strong>Note:</strong> Some World Mission rosaries may have the colors arranged differently, 
+            but all use the same 5 colors to represent the different areas of the world where the 
+            Church is spreading the Good News of Jesus.</p>
+        </div>
+
+        <!-- Reminder Box -->
+        <div class="reminder-box">
+            <h4>Remember:</h4>
+            <p><strong>DAILY PRAYER</strong> is the best way to make a real difference in the lives of children all over the world!</p>
+            <p>The World Mission Rosary is an excellent way to pray for the missions.</p>
+        </div>
+
+        <!-- Information Sections -->
+        <div class="info-sections">
+            <div class="info-card">
+                <h3>🌍 What is a Missionary?</h3>
+                <p>The word mission means "to be sent out." A missionary is someone who is sent out to bring the Good News of Jesus to others.</p>
+                
+                <p>Missionaries often go to far-off places, especially places where people struggle every day to survive. They help run hospitals, schools, orphanages, clinics. They provide food programs, and they help people learn how to care for and build better lives for themselves, their families, and their community.</p>
+                
+                <p>And, most importantly, they share their Catholic faith– all of their actions for others motivated by God's great love for each one of us!</p>
+            </div>
+
+            <div class="info-card">
+                <h3>🕊️ How Are We Missionaries?</h3>
+                <p>By our Baptism, we become members of a family—the family of the Church. Family members have responsibilities, and our responsibility is to share our faith.</p>
+                
+                <p>Some people fulfill this responsibility by actually going to mission countries to bring the Good News of Jesus to our brothers and sisters who are most in need. Most of us are missionaries by prayer and sacrifice.</p>
+                
+                <p><strong>Missionary spirit begins with prayer.</strong> Every person is able to offer prayers. Prayers lead to sacrifices. Every person can offer up suffering, temporary or chronic, for those who suffer daily in mission lands. Every person can give up something with the intention of sacrificing for the missions.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The World Mission Rosary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: #2c5aa0;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-text {
+            font-size: 1.1rem;
+            color: #2d3748;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .rosary-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .rosary-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .bead-section {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem;
+        }
+
+        .bead {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 3px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .yellow { background: #ffd700; }
+        .red { background: #dc3545; }
+        .white { background: #ffffff; border-color: #666; }
+        .blue { background: #007bff; }
+        .green { background: #28a745; }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .color-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            border-left: 6px solid;
+            transition: all 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-card.yellow { border-left-color: #ffd700; }
+        .color-card.red { border-left-color: #dc3545; }
+        .color-card.white { border-left-color: #6c757d; }
+        .color-card.blue { border-left-color: #007bff; }
+        .color-card.green { border-left-color: #28a745; }
+
+        .color-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-circle.yellow { background: #ffd700; color: #333; text-shadow: none; }
+        .color-circle.red { background: #dc3545; }
+        .color-circle.white { background: #ffffff; color: #333; text-shadow: none; }
+        .color-circle.blue { background: #007bff; }
+        .color-circle.green { background: #28a745; }
+
+        .color-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: #2c5aa0;
+        }
+
+        .color-card .continent {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .color-card .description {
+            color: #666;
+            font-style: italic;
+        }
+
+        .quote-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            margin: 2rem 0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .quote-section .quote {
+            font-size: 1.3rem;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .quote-section .author {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .info-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            font-size: 1.8rem;
+            color: #2c5aa0;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card p {
+            margin-bottom: 1rem;
+            color: #2d3748;
+            line-height: 1.7;
+        }
+
+        .reminder-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .reminder-box h4 {
+            color: #856404;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reminder-box p {
+            color: #856404;
+            margin: 0;
+        }
+
+        .rosary-colors-note {
+            background: #e7f3ff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-left: 5px solid #007bff;
+        }
+
+        .rosary-colors-note p {
+            color: #004085;
+            margin: 0;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .colors-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-sections {
+                grid-template-columns: 1fr;
+            }
+
+            .rosary-visual {
+                flex-direction: column;
+            }
+        }
+
+        .cross {
+            font-size: 2rem;
+            color: #8b4513;
+            margin: 0 1rem;
+        }
+
+        .prayer-instruction {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-left: 5px solid #4169e1;
+        }
+
+        .prayer-instruction h4 {
+            color: #4169e1;
+            margin-bottom: 1rem;
+        }
+
+        .prayer-instruction p {
+            color: #2d3748;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>✝️ The World Mission Rosary</h1>
+            <div class="subtitle">Created by Archbishop Fulton J. Sheen in 1951</div>
+            <div class="intro-text">
+                Archbishop Fulton J. Sheen loved the missions. And he wanted us to pray for our mission family. 
+                So in 1951 he created the World Mission Rosary, a beautiful way to embrace the entire world in prayer.
+            </div>
+        </div>
+
+        <!-- Rosary Colors Section -->
+        <div class="rosary-section">
+            <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 2rem; font-size: 2.2rem;">
+                Each Color Represents a Continent
+            </h2>
+            
+            <!-- Visual Rosary Representation -->
+            <div class="rosary-visual">
+                <div class="bead-section">
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                    <div class="bead yellow"></div>
+                </div>
+                <div class="cross">✝</div>
+                <div class="bead-section">
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                    <div class="bead red"></div>
+                </div>
+            </div>
+
+            <div class="colors-grid">
+                <div class="color-card yellow">
+                    <div class="color-circle yellow">🌅</div>
+                    <h3>Yellow</h3>
+                    <div class="continent">ASIA</div>
+                    <div class="description">Where the sun rises first each day</div>
+                </div>
+
+                <div class="color-card red">
+                    <div class="color-circle red">🔥</div>
+                    <h3>Red</h3>
+                    <div class="continent">THE AMERICAS</div>
+                    <div class="description">Where missionaries journeyed, "on fire" with faith in Jesus</div>
+                </div>
+
+                <div class="color-card white">
+                    <div class="color-circle white">👑</div>
+                    <h3>White</h3>
+                    <div class="continent">EUROPE</div>
+                    <div class="description">Home to the Pope, clothed in white</div>
+                </div>
+
+                <div class="color-card blue">
+                    <div class="color-circle blue">🌊</div>
+                    <h3>Blue</h3>
+                    <div class="continent">PACIFIC ISLANDS</div>
+                    <div class="description">Surrounded by the ocean waters</div>
+                </div>
+
+                <div class="color-card green">
+                    <div class="color-circle green">🌳</div>
+                    <h3>Green</h3>
+                    <div class="continent">AFRICA</div>
+                    <div class="description">With its many trees and plants</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prayer Instruction -->
+        <div class="prayer-instruction">
+            <h4>🙏 How to Pray the World Mission Rosary</h4>
+            <p>To pray the World Mission Rosary, think about each area of the world when you start a new set of beads. 
+            As you move through each decade, hold that continent and its people in your heart and prayers.</p>
+        </div>
+
+        <!-- Quote Section -->
+        <div class="quote-section">
+            <div class="quote">
+                "When you have finished praying the World Mission Rosary, 
+                you have given the world a 'great big hug'!"
+            </div>
+            <div class="author">— Archbishop Fulton J. Sheen</div>
+        </div>
+
+        <!-- Note about arrangements -->
+        <div class="rosary-colors-note">
+            <p><strong>Note:</strong> Some World Mission rosaries may have the colors arranged differently, 
+            but all use the same 5 colors to represent the different areas of the world where the 
+            Church is spreading the Good News of Jesus.</p>
+        </div>
+
+        <!-- Reminder Box -->
+        <div class="reminder-box">
+            <h4>Remember:</h4>
+            <p><strong>DAILY PRAYER</strong> is the best way to make a real difference in the lives of children all over the world!</p>
+            <p>The World Mission Rosary is an excellent way to pray for the missions.</p>
+        </div>
+
+        <!-- Information Sections -->
+        <div class="info-sections">
+            <div class="info-card">
+                <h3>🌍 What is a Missionary?</h3>
+                <p>The word mission means "to be sent out." A missionary is someone who is sent out to bring the Good News of Jesus to others.</p>
+                
+                <p>Missionaries often go to far-off places, especially places where people struggle every day to survive. They help run hospitals, schools, orphanages, clinics. They provide food programs, and they help people learn how to care for and build better lives for themselves, their families, and their community.</p>
+                
+                <p>And, most importantly, they share their Catholic faith– all of their actions for others motivated by God's great love for each one of us!</p>
+            </div>
+
+            <div class="info-card">
+                <h3>🕊️ How Are We Missionaries?</h3>
+                <p>By our Baptism, we become members of a family—the family of the Church. Family members have responsibilities, and our responsibility is to share our faith.</p>
+                
+                <p>Some people fulfill this responsibility by actually going to mission countries to bring the Good News of Jesus to our brothers and sisters who are most in need. Most of us are missionaries by prayer and sacrifice.</p>
+                
+                <p><strong>Missionary spirit begins with prayer.</strong> Every person is able to offer prayers. Prayers lead to sacrifices. Every person can offer up suffering, temporary or chronic, for those who suffer daily in mission lands. Every person can give up something with the intention of sacrificing for the missions.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
