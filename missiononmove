@@ -1,1 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive World Map - Operation World Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #a0aec0;
+            font-size: 1.1rem;
+        }
+
+        .map-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .world-map {
+            width: 100%;
+            height: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .country {
+            fill: #4a5568;
+            stroke: #2d3748;
+            stroke-width: 0.5;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .country:hover {
+            fill: #ffd700;
+            stroke: #ff8c00;
+            stroke-width: 1;
+        }
+
+        .country.christian-majority {
+            fill: #48bb78;
+        }
+
+        .country.christian-minority {
+            fill: #e53e3e;
+        }
+
+        .country.mixed {
+            fill: #ed8936;
+        }
+
+        .country-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: #2d3748;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .country-info.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .country-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .country-flag {
+            font-size: 3rem;
+        }
+
+        .country-title h2 {
+            color: #2c5aa0;
+            margin-bottom: 0.25rem;
+        }
+
+        .country-subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-item {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .prayer-section {
+            background: #e6f3ff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #3182ce;
+        }
+
+        .prayer-section h3 {
+            color: #1e3a8a;
+            margin-bottom: 1rem;
+        }
+
+        .challenges-section {
+            background: #fed7d7;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .challenges-section h3 {
+            color: #c53030;
+            margin-bottom: 1rem;
+        }
+
+        .opportunities-section {
+            background: #c6f6d5;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #48bb78;
+        }
+
+        .opportunities-section h3 {
+            color: #22543d;
+            margin-bottom: 1rem;
+        }
+
+        .close-btn {
+            background: #2c5aa0;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #1a365d;
+            transform: translateY(-2px);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .instructions {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            color: #ffd700;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .legend {
+                gap: 1rem;
+            }
+            
+            .world-map {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 Interactive World Map</h1>
+        <p>Explore mission data from around the world - Click any country to learn more</p>
+    </div>
+
+    <div class="map-container">
+        <div class="instructions">
+            ✨ Click on any country to see real mission data, prayer needs, and current challenges
+        </div>
+
+        <svg class="world-map" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+            <!-- North America -->
+            <path id="usa" class="country christian-majority" d="M 50 150 L 200 140 L 210 180 L 190 200 L 150 220 L 100 200 L 60 180 Z" onclick="showCountryInfo('usa')"/>
+            <path id="canada" class="country christian-majority" d="M 50 100 L 220 90 L 230 130 L 200 140 L 50 150 Z" onclick="showCountryInfo('canada')"/>
+            <path id="mexico" class="country christian-majority" d="M 100 220 L 150 220 L 170 250 L 140 260 L 110 250 Z" onclick="showCountryInfo('mexico')"/>
+
+            <!-- South America -->
+            <path id="brazil" class="country christian-majority" d="M 200 280 L 280 270 L 290 350 L 250 380 L 210 360 L 190 320 Z" onclick="showCountryInfo('brazil')"/>
+            <path id="argentina" class="country christian-majority" d="M 210 360 L 250 380 L 240 420 L 220 430 L 200 410 L 190 380 Z" onclick="showCountryInfo('argentina')"/>
+            <path id="colombia" class="country christian-majority" d="M 180 280 L 220 275 L 210 300 L 190 305 Z" onclick="showCountryInfo('colombia')"/>
+            <path id="peru" class="country christian-majority" d="M 170 300 L 200 295 L 210 330 L 180 340 Z" onclick="showCountryInfo('peru')"/>
+
+            <!-- Europe -->
+            <path id="france" class="country christian-minority" d="M 470 160 L 490 150 L 500 170 L 485 180 L 475 175 Z" onclick="showCountryInfo('france')"/>
+            <path id="germany" class="country mixed" d="M 490 150 L 510 145 L 520 165 L 500 170 L 490 160 Z" onclick="showCountryInfo('germany')"/>
+            <path id="uk" class="country mixed" d="M 450 140 L 470 135 L 475 155 L 460 160 L 450 150 Z" onclick="showCountryInfo('uk')"/>
+            <path id="spain" class="country christian-majority" d="M 460 180 L 490 175 L 495 195 L 470 200 L 460 190 Z" onclick="showCountryInfo('spain')"/>
+            <path id="italy" class="country christian-majority" d="M 500 180 L 520 175 L 525 200 L 510 210 L 500 195 Z" onclick="showCountryInfo('italy')"/>
+            <path id="poland" class="country christian-majority" d="M 520 145 L 540 140 L 545 160 L 525 165 L 520 155 Z" onclick="showCountryInfo('poland')"/>
+            <path id="ukraine" class="country christian-majority" d="M 540 155 L 570 150 L 575 170 L 550 175 L 540 165 Z" onclick="showCountryInfo('ukraine')"/>
+            <path id="russia" class="country mixed" d="M 570 120 L 720 110 L 730 170 L 575 170 L 570 140 Z" onclick="showCountryInfo('russia')"/>
+
+            <!-- Africa -->
+            <path id="nigeria" class="country mixed" d="M 480 250 L 510 245 L 520 265 L 500 275 L 485 270 Z" onclick="showCountryInfo('nigeria')"/>
+            <path id="kenya" class="country christian-majority" d="M 550 280 L 570 275 L 575 295 L 560 300 L 550 290 Z" onclick="showCountryInfo('kenya')"/>
+            <path id="ethiopia" class="country christian-majority" d="M 550 260 L 580 255 L 585 275 L 570 280 L 550 270 Z" onclick="showCountryInfo('ethiopia')"/>
+            <path id="south_africa" class="country christian-majority" d="M 520 350 L 550 345 L 560 365 L 540 375 L 520 370 Z" onclick="showCountryInfo('south_africa')"/>
+            <path id="egypt" class="country christian-minority" d="M 530 220 L 550 215 L 555 235 L 540 240 L 530 230 Z" onclick="showCountryInfo('egypt')"/>
+            <path id="morocco" class="country christian-minority" d="M 450 220 L 470 215 L 475 235 L 460 240 L 450 230 Z" onclick="showCountryInfo('morocco')"/>
+            <path id="algeria" class="country christian-minority" d="M 470 215 L 500 210 L 505 235 L 480 240 L 470 225 Z" onclick="showCountryInfo('algeria')"/>
+            <path id="sudan" class="country christian-minority" d="M 550 240 L 580 235 L 585 255 L 560 260 L 550 250 Z" onclick="showCountryInfo('sudan')"/>
+
+            <!-- Asia -->
+            <path id="china" class="country christian-minority" d="M 720 180 L 800 170 L 820 220 L 780 240 L 730 230 Z" onclick="showCountryInfo('china')"/>
+            <path id="india" class="country christian-minority" d="M 650 250 L 700 240 L 720 280 L 680 300 L 650 280 Z" onclick="showCountryInfo('india')"/>
+            <path id="indonesia" class="country christian-minority" d="M 720 320 L 780 315 L 790 340 L 750 350 L 720 340 Z" onclick="showCountryInfo('indonesia')"/>
+            <path id="japan" class="country christian-minority" d="M 850 200 L 870 195 L 875 220 L 860 225 L 850 210 Z" onclick="showCountryInfo('japan')"/>
+            <path id="philippines" class="country christian-majority" d="M 820 280 L 840 275 L 845 300 L 830 305 L 820 290 Z" onclick="showCountryInfo('philippines')"/>
+            <path id="thailand" class="country christian-minority" d="M 720 280 L 740 275 L 745 300 L 730 305 L 720 290 Z" onclick="showCountryInfo('thailand')"/>
+            <path id="south_korea" class="country mixed" d="M 820 220 L 835 215 L 840 235 L 825 240 L 820 230 Z" onclick="showCountryInfo('south_korea')"/>
+
+            <!-- Middle East -->
+            <path id="saudi_arabia" class="country christian-minority" d="M 580 240 L 620 235 L 630 265 L 600 270 L 580 255 Z" onclick="showCountryInfo('saudi_arabia')"/>
+            <path id="iran" class="country christian-minority" d="M 620 220 L 660 215 L 670 245 L 640 250 L 620 235 Z" onclick="showCountryInfo('iran')"/>
+            <path id="turkey" class="country christian-minority" d="M 540 200 L 580 195 L 590 215 L 560 220 L 540 210 Z" onclick="showCountryInfo('turkey')"/>
+
+            <!-- Oceania -->
+            <path id="australia" class="country christian-majority" d="M 800 380 L 880 375 L 890 410 L 830 420 L 800 400 Z" onclick="showCountryInfo('australia')"/>
+            <path id="new_zealand" class="country christian-majority" d="M 900 420 L 920 415 L 925 435 L 910 440 L 900 430 Z" onclick="showCountryInfo('new_zealand')"/>
+        </svg>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #48bb78;"></div>
+                <span>Christian Majority (50%+)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ed8936;"></div>
+                <span>Mixed (20-50%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e53e3e;"></div>
+                <span>Christian Minority (&lt;20%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4a5568;"></div>
+                <span>No Data</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Country Info Modal -->
+    <div class="overlay" id="overlay" onclick="closeCountryInfo()"></div>
+    <div class="country-info" id="countryInfo">
+        <div class="country-header">
+            <div class="country-flag" id="countryFlag">🇺🇸</div>
+            <div class="country-title">
+                <h2 id="countryName">United States</h2>
+                <div class="country-subtitle" id="countrySubtitle">North America</div>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be populated here -->
+        </div>
+
+        <div class="prayer-section">
+            <h3>🙏 Current Prayer Focus</h3>
+            <p id="prayerNeeds">Prayer needs will be displayed here...</p>
+        </div>
+
+        <div class="challenges-section">
+            <h3>⚠️ Current Challenges</h3>
+            <ul id="challengesList">
+                <!-- Challenges will be populated here -->
+            </ul>
+        </div>
+
+        <div class="opportunities-section">
+            <h3>✨ Kingdom Opportunities</h3>
+            <ul id="opportunitiesList">
+                <!-- Opportunities will be populated here -->
+            </ul>
+        </div>
+
+        <button class="close-btn" onclick="closeCountryInfo()">Close</button>
+    </div>
+
+    <script>
+        // Real country data inspired by Operation World
+        const countryData = {
+            usa: {
+                name: "United States",
+                flag: "🇺🇸",
+                continent: "North America",
+                population: "331M",
+                christianPercent: 65,
+                evangelicalPercent: 25,
+                majorReligion: "Christian",
+                lifeExpectancy: "79 years",
+                literacy: "99%",
+                prayerFocus: "Pray for revival in the Church and healing of deep cultural divisions. Pray for effective evangelism to reach the growing secular population and immigrant communities.",
+                challenges: [
+                    "Increasing secularization and decline in church attendance",
+                    "Deep political and cultural polarization",
+                    "Prosperity gospel distorting true Christianity",
+                    "Mental health crisis among youth",
+                    "Racial reconciliation needs"
+                ],
+                opportunities: [
+                    "Strong missionary sending capacity",
+                    "Diverse immigrant populations open to Gospel",
+                    "Large evangelical infrastructure",
+                    "Growing Hispanic Christian population",
+                    "Campus ministry movements"
+                ]
+            },
+            brazil: {
+                name: "Brazil",
+                flag: "🇧🇷",
+                continent: "South America", 
+                population: "216M",
+                christianPercent: 87,
+                evangelicalPercent: 22,
+                majorReligion: "Christian",
+                lifeExpectancy: "76 years",
+                literacy: "93%",
+                prayerFocus: "Pray for Brazil's growing missions movement to reach Amazon tribes and urban poor. Pray for protection from violence and corruption.",
+                challenges: [
+                    "Extreme inequality between rich and poor",
+                    "Violence in urban favelas and drug trafficking",
+                    "Corruption in government institutions",
+                    "Environmental destruction of Amazon rainforest",
+                    "Syncretism with spiritist practices"
+                ],
+                opportunities: [
+                    "Major global missions sending nation",
+                    "Vibrant Pentecostal church growth",
+                    "Strong youth movements and worship culture",
+                    "Indigenous people movements to Christ",
+                    "Growing social action initiatives"
+                ]
+            },
+            china: {
+                name: "China",
+                flag: "🇨🇳",
+                continent: "Asia",
+                population: "1.4B",
+                christianPercent: 7,
+                evangelicalPercent: 5,
+                majorReligion: "Non-religious",
+                lifeExpectancy: "77 years",
+                literacy: "97%",
+                prayerFocus: "Pray for the persecuted church under increasing government pressure. Pray for house church leaders and registered church pastors facing restrictions.",
+                challenges: [
+                    "Severe government persecution and surveillance",
+                    "Demolition of churches and crosses",
+                    "Imprisonment of pastors and believers",
+                    "Social credit system restricting Christian activities",
+                    "Online censorship of Christian content"
+                ],
+                opportunities: [
+                    "Underground church showing remarkable growth",
+                    "Chinese diaspora spreading Gospel globally", 
+                    "Young generation seeking spiritual truth",
+                    "House church networks developing resilience",
+                    "Christian business leaders gaining influence"
+                ]
+            },
+            india: {
+                name: "India",
+                flag: "🇮🇳",
+                continent: "Asia",
+                population: "1.4B",
+                christianPercent: 2.4,
+                evangelicalPercent: 0.5,
+                majorReligion: "Hindu",
+                lifeExpectancy: "70 years",
+                literacy: "74%",
+                prayerFocus: "Pray for the 2,445 unreached people groups. Pray for protection of Christians facing growing persecution and for breakthrough among caste Hindus.",
+                challenges: [
+                    "2,445 unreached people groups",
+                    "Growing persecution from Hindu extremists",
+                    "Anti-conversion laws in many states",
+                    "Caste system hindering church growth",
+                    "Poverty in rural areas limiting ministry"
+                ],
+                opportunities: [
+                    "Rapid church growth among lower castes",
+                    "Strong indigenous missions movement",
+                    "Growing urban middle class",
+                    "Medical and education ministries effective",
+                    "Diaspora Indians open to Gospel abroad"
+                ]
+            },
+            nigeria: {
+                name: "Nigeria",
+                flag: "🇳🇬",
+                continent: "Africa",
+                population: "225M",
+                christianPercent: 51,
+                evangelicalPercent: 31,
+                majorReligion: "Mixed",
+                lifeExpectancy: "55 years",
+                literacy: "62%",
+                prayerFocus: "Pray for peace between Christians and Muslims. Pray for protection from Boko Haram terrorism and for Nigeria's missions movement (Vision 50:15).",
+                challenges: [
+                    "Violent persecution by Boko Haram terrorists",
+                    "Christian-Muslim tensions and conflict",
+                    "Widespread government corruption",
+                    "Extreme poverty despite oil wealth",
+                    "Kidnapping of Christians, especially children"
+                ],
+                opportunities: [
+                    "Major missions-sending nation (Vision 50:15 - 50,000 missionaries by 2030)",
+                    "Powerful prayer movements and revivals",
+                    "Strong Pentecostal church growth",
+                    "Young population passionate for Gospel",
+                    "Influential Nigerian diaspora worldwide"
+                ]
+            },
+            france: {
+                name: "France",
+                flag: "🇫🇷",
+                continent: "Europe",
+                population: "68M",
+                christianPercent: 63,
+                evangelicalPercent: 0.6,
+                majorReligion: "Christian (nominal)",
+                lifeExpectancy: "83 years",
+                literacy: "99%",
+                prayerFocus: "Pray for re-evangelization of France. Despite nominal Christian majority, only 0.6% are evangelical. Pray for breakthrough among secular French.",
+                challenges: [
+                    "Massive spiritual decline and secularization",
+                    "Only 0.6% evangelical despite 63% nominal Christian",
+                    "Hostility to Christian faith in public sphere",
+                    "Large unreached Muslim immigrant population",
+                    "Church attendance extremely low"
+                ],
+                opportunities: [
+                    "Growing immigrant churches bringing revival",
+                    "Student ministry showing encouraging fruit",
+                    "Church planting movements in major cities",
+                    "Young people searching for spiritual meaning",
+                    "Strong Catholic renewal movements"
+                ]
+            },
+            kenya: {
+                name: "Kenya",
+                flag: "🇰🇪",
+                continent: "Africa",
+                population: "58M",
+                christianPercent: 83,
+                evangelicalPercent: 49,
+                majorReligion: "Christian",
+                lifeExpectancy: "61 years",
+                literacy: "82%",
+                prayerFocus: "Pray for Christians to unite against corruption and promote godly governance. Pray for Kenya's role as a mission hub for Africa.",
+                challenges: [
+                    "Widespread corruption despite high Christian percentage",
+                    "Ethnic tensions and violence over resources",
+                    "Widespread poverty in rural areas",
+                    "Terrorism threats from Somalia",
+                    "Political tribalism dividing Christians"
+                ],
+                opportunities: [
+                    "Massive evangelical presence (49%)",
+                    "Strategic hub for African missions",
+                    "Strong indigenous church leadership",
+                    "Growing missions sending movement",
+                    "Young population eager for change"
+                ]
+            },
+            philippines: {
+                name: "Philippines",
+                flag: "🇵🇭",
+                continent: "Asia",
+                population: "114M",
+                christianPercent: 93,
+                evangelicalPercent: 14,
+                majorReligion: "Christian",
+                lifeExpectancy: "71 years",
+                literacy: "98%",
+                prayerFocus: "Pray for disaster preparedness as Philippines faces frequent typhoons. Pray for missions to Muslim south and for Filipino missionaries worldwide.",
+                challenges: [
+                    "Frequent natural disasters (typhoons, earthquakes)",
+                    "Muslim-Christian tensions in southern regions",
+                    "Poverty despite economic growth",
+                    "Political corruption and violence",
+                    "Overseas Filipino workers facing hardships"
+                ],
+                opportunities: [
+                    "Very high Christian percentage (93%)",
+                    "Major missions-sending nation globally",
+                    "Strong Catholic renewal movements",
+                    "Vibrant evangelical church growth",
+                    "Filipino diaspora spreading Gospel worldwide"
+                ]
+            },
+            uk: {
+                name: "United Kingdom",
+                flag: "🇬🇧",
+                continent: "Europe",
+                population: "67M",
+                christianPercent: 59,
+                evangelicalPercent: 7,
+                majorReligion: "Christian",
+                lifeExpectancy: "81 years",
+                literacy: "99%",
+                prayerFocus: "Pray for church revival in post-Christian society. Pray for effective evangelism among secular British and diverse immigrant communities.",
+                challenges: [
+                    "Post-Christian secular society",
+                    "Declining church attendance across denominations",
+                    "Islamic radicalization in some communities",
+                    "Moral relativism in education and media",
+                    "Economic inequality and social breakdown"
+                ],
+                opportunities: [
+                    "Historic Christian heritage providing foundation",
+                    "Diverse immigrant churches bringing renewal",
+                    "Strong Christian universities and ministries",
+                    "Global missions legacy and connections",
+                    "Growing interest in spirituality among youth"
+                ]
+            },
+            australia: {
+                name: "Australia",
+                flag: "🇦🇺",
+                continent: "Oceania",
+                population: "26M",
+                christianPercent: 52,
+                evangelicalPercent: 4,
+                majorReligion: "Christian",
+                lifeExpectancy: "83 years",
+                literacy: "99%",
+                prayerFocus: "Pray for revival in declining churches and effective ministry to Aboriginal peoples. Pray for Australia's role in Pacific missions.",
+                challenges: [
+                    "Rapid secularization and church decline",
+                    "Need for reconciliation with Aboriginal peoples",
+                    "Geographic isolation limiting ministry",
+                    "Prosperity reducing spiritual hunger",
+                    "Environmental challenges from climate change"
+                ],
+                opportunities: [
+                    "Strong missions commitment to Pacific region",
+                    "Growing Asian immigrant churches",
+                    "Effective Aboriginal Christian movements",
+                    "Strategic location for Asian outreach",
+                    "Quality Christian education institutions"
+                ]
+            }
+        };
+
+        function showCountryInfo(countryId) {
+            const country = countryData[countryId];
+            if (!country) {
+                alert('Country data not available yet. More countries coming soon!');
+                return;
+            }
+
+            // Populate header
+            document.getElementById('countryFlag').textContent = country.flag;
+            document.getElementById('countryName').textContent = country.name;
+            document.getElementById('countrySubtitle').textContent = country.continent;
+
+            // Populate stats
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${country.population}</div>
+                    <div class="stat-label">Population</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${country.christianPercent}%</div>
+                    <div class="stat-label">Christian</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${country.evangelicalPercent}%</div>
+                    <div class="stat-label">Evangelical</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${country.lifeExpectancy}</div>
+                    <div class="stat-label">Life Expectancy</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${country.majorReligion}</div>
+                    <div class="stat-label">Major Religion</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${country.literacy}</div>
+                    <div class="stat-label">Literacy Rate</div>
+                </div>
+            `;
+
+            // Populate prayer focus
+            document.getElementById('prayerNeeds').textContent = country.prayerFocus;
+
+            // Populate challenges
+            const challengesList = document.getElementById('challengesList');
+            challengesList.innerHTML = country.challenges.map(challenge => 
+                `<li style="margin-bottom: 0.5rem;">${challenge}</li>`
+            ).join('');
+
+            // Populate opportunities
+            const opportunitiesList = document.getElementById('opportunitiesList');
+            opportunitiesList.innerHTML = country.opportunities.map(opportunity => 
+                `<li style="margin-bottom: 0.5rem;">${opportunity}</li>`
+            ).join('');
+
+            // Show modal
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('countryInfo').classList.add('show');
+        }
+
+        function closeCountryInfo() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('countryInfo').classList.remove('show');
+        }
+
+        // Add more countries gradually
+        const additionalCountries = ['canada', 'mexico', 'germany', 'spain', 'italy', 'poland', 'ukraine', 'russia', 'south_africa', 'ethiopia', 'egypt', 'morocco', 'algeria', 'sudan', 'indonesia', 'japan', 'thailand', 'south_korea', 'saudi_arabia', 'iran', 'turkey', 'new_zealand', 'argentina', 'colombia', 'peru'];
+
+        // Initialize tooltips for countries without full data
+        additionalCountries.forEach(countryId => {
+            const countryElement = document.getElementById(countryId);
+            if (countryElement && !countryData[countryId]) {
+                countryElement.style.opacity = '0.7';
+                countryElement.setAttribute('title', 'Click for more information (data coming soon)');
+            }
+        });
+
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCountryInfo();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Interactive World Map loaded with', Object.keys(countryData).length, 'countries');
+        });
+    </script>
+</body>
+</html>
