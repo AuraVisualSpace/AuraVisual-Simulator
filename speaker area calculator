@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker SPL Room Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .control-group input, .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .control-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .view-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .view-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        canvas {
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-panel h3 {
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .spl-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .coverage-calculator {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .coverage-calculator h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .coverage-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .coverage-stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .coverage-stat .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .coverage-stat .label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls, .info-panel {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔊 Speaker SPL Room Simulator</h1>
+        
+        <div class="main-layout">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="roomWidth">Room Width (m):</label>
+                    <input type="number" id="roomWidth" value="8" min="3" max="20" step="0.5">
+                </div>
+                
+                <div class="control-group">
+                    <label for="roomHeight">Room Height (m):</label>
+                    <input type="number" id="roomHeight" value="6" min="2" max="10" step="0.5">
+                </div>
+                
+                <div class="control-group">
+                    <label for="roomDepth">Room Depth (m):</label>
+                    <input type="number" id="roomDepth" value="10" min="3" max="20" step="0.5">
+                </div>
+                
+                <div class="control-group">
+                    <label for="maxSPL">Max SPL (dB):</label>
+                    <input type="number" id="maxSPL" value="110" min="80" max="140" step="1">
+                </div>
+                
+                <div class="control-group">
+                    <label for="speakerWall">Speaker Wall:</label>
+                    <select id="speakerWall">
+                        <option value="front">Front Wall</option>
+                        <option value="back">Back Wall</option>
+                        <option value="left">Left Wall</option>
+                        <option value="right">Right Wall</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="speakerX">Speaker X Position:</label>
+                    <input type="range" id="speakerX" min="0" max="100" value="50">
+                    <span id="speakerXValue">50%</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="speakerY">Speaker Y Position:</label>
+                    <input type="range" id="speakerY" min="0" max="100" value="50">
+                    <span id="speakerYValue">50%</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="speakerZ">Speaker Z Position (Height):</label>
+                    <input type="range" id="speakerZ" min="0" max="100" value="50">
+                    <span id="speakerZValue">50%</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="horizontalRotation">Horizontal Rotation (°):</label>
+                    <input type="range" id="horizontalRotation" min="0" max="360" value="0">
+                    <span id="horizontalRotationValue">0°</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="verticalTilt">Vertical Tilt (°):</label>
+                    <input type="range" id="verticalTilt" min="-90" max="90" value="0">
+                    <span id="verticalTiltValue">0°</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="viewMode">View Mode:</label>
+                    <select id="viewMode">
+                        <option value="top_1.2">Top View (1.2m listening height)</option>
+                        <option value="top_1.7">Top View (1.7m listening height)</option>
+                        <option value="side">Side View</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="view-container">
+                <div class="view-title" id="viewTitle">Top View (1.2m Listening Height)</div>
+                <canvas id="mainView" width="800" height="600"></canvas>
+            </div>
+            
+            <div class="info-panel">
+                <h3>SPL Distribution Legend</h3>
+                <div class="spl-legend">
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #ff0000;"></div>
+                        <span>110+ dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #ff8000;"></div>
+                        <span>100-110 dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #ffff00;"></div>
+                        <span>90-100 dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #80ff00;"></div>
+                        <span>80-90 dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #00ff80;"></div>
+                        <span>70-80 dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #0080ff;"></div>
+                        <span>60-70 dB</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: #0000ff;"></div>
+                        <span><60 dB</span>
+                    </div>
+                </div>
+                
+                <div class="coverage-calculator">
+                    <h4>Coverage Calculator</h4>
+                    <div class="control-group">
+                        <label for="minCoverageSPL">Minimum SPL for Coverage (dB):</label>
+                        <input type="number" id="minCoverageSPL" value="80" min="60" max="120" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="maxCoverageSPL">Maximum SPL for Coverage (dB):</label>
+                        <input type="number" id="maxCoverageSPL" value="100" min="70" max="130" step="1">
+                    </div>
+                    <div class="coverage-stats">
+                        <div class="coverage-stat">
+                            <div class="value" id="coveragePercentage">0%</div>
+                            <div class="label">Area Coverage</div>
+                        </div>
+                        <div class="coverage-stat">
+                            <div class="value" id="coverageArea">0 m²</div>
+                            <div class="label">Covered Area</div>
+                        </div>
+                        <div class="coverage-stat">
+                            <div class="value" id="averageSPL">0 dB</div>
+                            <div class="label">Average SPL</div>
+                        </div>
+                        <div class="coverage-stat">
+                            <div class="value" id="uniformity">0%</div>
+                            <div class="label">Uniformity</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">
+                    <strong>Position Controls:</strong><br>
+                    • <strong>X Position:</strong> Left-right placement on wall<br>
+                    • <strong>Y Position:</strong> Front-back position (for side walls)<br>
+                    • <strong>Z Position:</strong> Height on wall (0% = floor, 100% = ceiling)<br>
+                    • <strong>Horizontal Rotation:</strong> Swivel left-right (0-360°)<br>
+                    • <strong>Vertical Tilt:</strong> Aim up/down (-90° to +90°)<br><br>
+                    <strong>View Modes:</strong><br>
+                    • <strong>Top View (1.2m):</strong> Standard seated listening height<br>
+                    • <strong>Top View (1.7m):</strong> Standing listening height<br>
+                    • <strong>Side View:</strong> Shows vertical dispersion and height relationships
+                </div>
+                <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
+                    This simulation shows approximate SPL distribution based on speaker position, height, rotation, and dispersion pattern. 
+                    Coverage calculator analyzes the percentage of room area within specified SPL range.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SPLSimulator {
+            constructor() {
+                this.canvas = document.getElementById('mainView');
+                this.ctx = this.canvas.getContext('2d');
+                this.setupEventListeners();
+                this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                // Room dimension controls
+                document.getElementById('roomWidth').addEventListener('input', () => this.updateDisplay());
+                document.getElementById('roomHeight').addEventListener('input', () => this.updateDisplay());
+                document.getElementById('roomDepth').addEventListener('input', () => this.updateDisplay());
+                document.getElementById('maxSPL').addEventListener('input', () => this.updateDisplay());
+                
+                // Speaker position controls
+                document.getElementById('speakerWall').addEventListener('change', () => this.updateDisplay());
+                document.getElementById('speakerX').addEventListener('input', (e) => {
+                    document.getElementById('speakerXValue').textContent = e.target.value + '%';
+                    this.updateDisplay();
+                });
+                document.getElementById('speakerY').addEventListener('input', (e) => {
+                    document.getElementById('speakerYValue').textContent = e.target.value + '%';
+                    this.updateDisplay();
+                });
+                document.getElementById('speakerZ').addEventListener('input', (e) => {
+                    document.getElementById('speakerZValue').textContent = e.target.value + '%';
+                    this.updateDisplay();
+                });
+                
+                // Rotation controls
+                document.getElementById('horizontalRotation').addEventListener('input', (e) => {
+                    document.getElementById('horizontalRotationValue').textContent = e.target.value + '°';
+                    this.updateDisplay();
+                });
+                document.getElementById('verticalTilt').addEventListener('input', (e) => {
+                    document.getElementById('verticalTiltValue').textContent = e.target.value + '°';
+                    this.updateDisplay();
+                });
+                
+                // View mode
+                document.getElementById('viewMode').addEventListener('change', () => this.updateDisplay());
+                
+                // Coverage calculator controls
+                document.getElementById('minCoverageSPL').addEventListener('input', () => this.updateCoverage());
+                document.getElementById('maxCoverageSPL').addEventListener('input', () => this.updateCoverage());
+            }
+
+            getSPLColor(spl) {
+                if (spl >= 110) return '#ff0000';
+                if (spl >= 100) return '#ff8000';
+                if (spl >= 90) return '#ffff00';
+                if (spl >= 80) return '#80ff00';
+                if (spl >= 70) return '#00ff80';
+                if (spl >= 60) return '#0080ff';
+                return '#0000ff';
+            }
+
+            calculateSPL(speakerPos, listenerPos, maxSPL, rotation, tilt) {
+                const dx = listenerPos.x - speakerPos.x;
+                const dy = listenerPos.y - speakerPos.y;
+                const dz = listenerPos.z - speakerPos.z;
+                
+                const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                // Calculate angle from speaker axis
+                const speakerDirX = Math.cos(rotation * Math.PI / 180);
+                const speakerDirY = Math.sin(rotation * Math.PI / 180);
+                const speakerDirZ = Math.sin(tilt * Math.PI / 180);
+                
+                const dirToListener = {
+                    x: dx / distance,
+                    y: dy / distance,
+                    z: dz / distance
+                };
+                
+                const dotProduct = speakerDirX * dirToListener.x + 
+                                 speakerDirY * dirToListener.y + 
+                                 speakerDirZ * dirToListener.z;
+                
+                const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct))) * 180 / Math.PI;
+                
+                // Directivity pattern (simplified)
+                let directivityFactor = 1;
+                if (angle > 60) {
+                    directivityFactor = Math.max(0.1, 1 - (angle - 60) / 60);
+                }
+                
+                // Distance attenuation (6dB per doubling of distance)
+                const distanceAttenuation = 20 * Math.log10(Math.max(0.1, distance));
+                
+                // Calculate SPL
+                const spl = maxSPL - distanceAttenuation + 10 * Math.log10(directivityFactor);
+                
+                return Math.max(0, spl);
+            }
+
+            getSpeakerPosition() {
+                const roomWidth = parseFloat(document.getElementById('roomWidth').value);
+                const roomHeight = parseFloat(document.getElementById('roomHeight').value);
+                const roomDepth = parseFloat(document.getElementById('roomDepth').value);
+                const speakerWall = document.getElementById('speakerWall').value;
+                const speakerX = parseFloat(document.getElementById('speakerX').value) / 100;
+                const speakerY = parseFloat(document.getElementById('speakerY').value) / 100;
+                const speakerZ = parseFloat(document.getElementById('speakerZ').value) / 100;
+                
+                let pos = { x: 0, y: 0, z: 0 };
+                
+                switch (speakerWall) {
+                    case 'front':
+                        pos.x = speakerX * roomWidth;
+                        pos.y = 0;
+                        pos.z = speakerZ * roomHeight;
+                        break;
+                    case 'back':
+                        pos.x = speakerX * roomWidth;
+                        pos.y = roomDepth;
+                        pos.z = speakerZ * roomHeight;
+                        break;
+                    case 'left':
+                        pos.x = 0;
+                        pos.y = speakerY * roomDepth;
+                        pos.z = speakerZ * roomHeight;
+                        break;
+                    case 'right':
+                        pos.x = roomWidth;
+                        pos.y = speakerY * roomDepth;
+                        pos.z = speakerZ * roomHeight;
+                        break;
+                }
+                
+                return pos;
+            }
+
+            updateDisplay() {
+                const viewMode = document.getElementById('viewMode').value;
+                
+                if (viewMode.startsWith('top')) {
+                    const listeningHeight = parseFloat(viewMode.split('_')[1]);
+                    this.drawTopView(listeningHeight);
+                    document.getElementById('viewTitle').textContent = `Top View (${listeningHeight}m Listening Height)`;
+                } else {
+                    this.drawSideView();
+                    document.getElementById('viewTitle').textContent = 'Side View';
+                }
+                
+                this.updateCoverage();
+            }
+
+            drawTopView(listeningHeight) {
+                const roomWidth = parseFloat(document.getElementById('roomWidth').value);
+                const roomDepth = parseFloat(document.getElementById('roomDepth').value);
+                const maxSPL = parseFloat(document.getElementById('maxSPL').value);
+                const horizontalRotation = parseFloat(document.getElementById('horizontalRotation').value);
+                const verticalTilt = parseFloat(document.getElementById('verticalTilt').value);
+                
+                const speakerPos = this.getSpeakerPosition();
+                
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                const scaleX = this.canvas.width / roomWidth;
+                const scaleY = this.canvas.height / roomDepth;
+                const scale = Math.min(scaleX, scaleY) * 0.9;
+                
+                const offsetX = (this.canvas.width - roomWidth * scale) / 2;
+                const offsetY = (this.canvas.height - roomDepth * scale) / 2;
+                
+                // Draw SPL heatmap
+                const resolution = 40;
+                const stepX = roomWidth / resolution;
+                const stepY = roomDepth / resolution;
+                
+                this.splData = []; // Store for coverage calculation
+                
+                for (let i = 0; i < resolution; i++) {
+                    this.splData[i] = [];
+                    for (let j = 0; j < resolution; j++) {
+                        const x = i * stepX + stepX / 2;
+                        const y = j * stepY + stepY / 2;
+                        
+                        const listenerPos = { x, y, z: listeningHeight };
+                        const spl = this.calculateSPL(speakerPos, listenerPos, maxSPL, horizontalRotation, verticalTilt);
+                        
+                        this.splData[i][j] = spl;
+                        
+                        const color = this.getSPLColor(spl);
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.7;
+                        this.ctx.fillRect(
+                            offsetX + i * stepX * scale,
+                            offsetY + j * stepY * scale,
+                            stepX * scale,
+                            stepY * scale
+                        );
+                    }
+                }
+                
+                this.ctx.globalAlpha = 1;
+                
+                // Draw room outline
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(offsetX, offsetY, roomWidth * scale, roomDepth * scale);
+                
+                // Draw speaker
+                const speakerScreenX = offsetX + speakerPos.x * scale;
+                const speakerScreenY = offsetY + speakerPos.y * scale;
+                
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.beginPath();
+                this.ctx.arc(speakerScreenX, speakerScreenY, 8, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // Draw speaker direction indicator
+                const dirLength = 30;
+                const dirX = Math.cos(horizontalRotation * Math.PI / 180) * dirLength;
+                const dirY = Math.sin(horizontalRotation * Math.PI / 180) * dirLength;
+                
+                this.ctx.strokeStyle = '#ff00ff';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(speakerScreenX, speakerScreenY);
+                this.ctx.lineTo(speakerScreenX + dirX, speakerScreenY + dirY);
+                this.ctx.stroke();
+                
+                // Add coordinate labels
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('0,0', offsetX - 30, offsetY + 15);
+                this.ctx.fillText(`${roomWidth},${roomDepth}`, offsetX + roomWidth * scale - 40, offsetY + roomDepth * scale + 20);
+            }
+
+            drawSideView() {
+                const roomWidth = parseFloat(document.getElementById('roomWidth').value);
+                const roomHeight = parseFloat(document.getElementById('roomHeight').value);
+                const maxSPL = parseFloat(document.getElementById('maxSPL').value);
+                const horizontalRotation = parseFloat(document.getElementById('horizontalRotation').value);
+                const verticalTilt = parseFloat(document.getElementById('verticalTilt').value);
+                
+                const speakerPos = this.getSpeakerPosition();
+                
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                const scaleX = this.canvas.width / roomWidth;
+                const scaleY = this.canvas.height / roomHeight;
+                const scale = Math.min(scaleX, scaleY) * 0.9;
+                
+                const offsetX = (this.canvas.width - roomWidth * scale) / 2;
+                const offsetY = (this.canvas.height - roomHeight * scale) / 2;
+                
+                // Draw SPL heatmap for side view
+                const resolution = 40;
+                const stepX = roomWidth / resolution;
+                const stepZ = roomHeight / resolution;
+                
+                this.splData = [];
+                
+                for (let i = 0; i < resolution; i++) {
+                    this.splData[i] = [];
+                    for (let j = 0; j < resolution; j++) {
+                        const x = i * stepX + stepX / 2;
+                        const z = j * stepZ + stepZ / 2;
+                        
+                        const listenerPos = { x, y: roomWidth / 2, z }; // Middle of room depth
+                        const spl = this.calculateSPL(speakerPos, listenerPos, maxSPL, horizontalRotation, verticalTilt);
+                        
+                        this.splData[i][j] = spl;
+                        
+                        const color = this.getSPLColor(spl);
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.7;
+                        this.ctx.fillRect(
+                            offsetX + i * stepX * scale,
+                            offsetY + (roomHeight - (j + 1) * stepZ) * scale,
+                            stepX * scale,
+                            stepZ * scale
+                        );
+                    }
+                }
+                
+                this.ctx.globalAlpha = 1;
+                
+                // Draw room outline
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(offsetX, offsetY, roomWidth * scale, roomHeight * scale);
+                
+                // Draw speaker
+                const speakerScreenX = offsetX + speakerPos.x * scale;
+                const speakerScreenY = offsetY + (roomHeight - speakerPos.z) * scale;
+                
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.beginPath();
+                this.ctx.arc(speakerScreenX, speakerScreenY, 8, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // Draw speaker direction indicator (vertical tilt)
+                const dirLength = 30;
+                const dirX = Math.cos(verticalTilt * Math.PI / 180) * dirLength;
+                const dirZ = Math.sin(verticalTilt * Math.PI / 180) * dirLength;
+                
+                this.ctx.strokeStyle = '#ff00ff';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(speakerScreenX, speakerScreenY);
+                this.ctx.lineTo(speakerScreenX + dirX, speakerScreenY - dirZ);
+                this.ctx.stroke();
+            }
+
+            updateCoverage() {
+                if (!this.splData) return;
+                
+                const minSPL = parseFloat(document.getElementById('minCoverageSPL').value);
+                const maxSPL = parseFloat(document.getElementById('maxCoverageSPL').value);
+                const roomWidth = parseFloat(document.getElementById('roomWidth').value);
+                const roomDepth = parseFloat(document.getElementById('roomDepth').value);
+                const roomHeight = parseFloat(document.getElementById('roomHeight').value);
+                
+                let totalCells = 0;
+                let coveredCells = 0;
+                let totalSPL = 0;
+                let minFoundSPL = Infinity;
+                let maxFoundSPL = -Infinity;
+                
+                for (let i = 0; i < this.splData.length; i++) {
+                    for (let j = 0; j < this.splData[i].length; j++) {
+                        const spl = this.splData[i][j];
+                        totalCells++;
+                        totalSPL += spl;
+                        
+                        minFoundSPL = Math.min(minFoundSPL, spl);
+                        maxFoundSPL = Math.max(maxFoundSPL, spl);
+                        
+                        if (spl >= minSPL && spl <= maxSPL) {
+                            coveredCells++;
+                        }
+                    }
+                }
+                
+                const coveragePercentage = totalCells > 0 ? (coveredCells / totalCells * 100) : 0;
+                const averageSPL = totalCells > 0 ? (totalSPL / totalCells) : 0;
+                
+                // Calculate area based on current view
+                const viewMode = document.getElementById('viewMode').value;
+                let totalArea, coveredArea;
+                
+                if (viewMode.startsWith('top')) {
+                    totalArea = roomWidth * roomDepth;
+                    coveredArea = totalArea * (coveragePercentage / 100);
+                } else {
+                    totalArea = roomWidth * roomHeight;
+                    coveredArea = totalArea * (coveragePercentage / 100);
+                }
+                
+                // Calculate uniformity (inverse of SPL variation)
+                const splRange = maxFoundSPL - minFoundSPL;
+                const uniformity = splRange > 0 ? Math.max(0, (1 - splRange / 40) * 100
