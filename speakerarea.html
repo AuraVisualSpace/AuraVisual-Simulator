@@ -699,4 +699,24 @@
                 
                 // Calculate uniformity (inverse of SPL variation)
                 const splRange = maxFoundSPL - minFoundSPL;
-                const uniformity = splRange > 0 ? Math.max(0, (1 - splRange / 40) * 100
+                const uniformity = splRange > 0 ? Math.max(0, (1 - splRange / 40) * 100) : 100;
+                
+                // Update display
+                document.getElementById('coveragePercentage').textContent = coveragePercentage.toFixed(1) + '%';
+                document.getElementById('coverageArea').textContent = coveredArea.toFixed(1) + ' m²';
+                document.getElementById('averageSPL').textContent = averageSPL.toFixed(1) + ' dB';
+                document.getElementById('uniformity').textContent = uniformity.toFixed(1) + '%';
+                
+                // Update coverage stat colors based on values
+                document.getElementById('coveragePercentage').style.color = coveragePercentage >= 80 ? '#4CAF50' : coveragePercentage >= 60 ? '#FFA726' : '#F44336';
+                document.getElementById('uniformity').style.color = uniformity >= 80 ? '#4CAF50' : uniformity >= 60 ? '#FFA726' : '#F44336';
+            }
+        }
+
+        // Initialize the simulator when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SPLSimulator();
+        });
+    </script>
+</body>
+</html>
